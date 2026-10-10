@@ -129,6 +129,18 @@ const SCENARIOS = [
   },
   { name: '06-settings', route: '/settings', seed: [SEED_PROFILE, SEED_AI_CONFIG, SEED_DIARIES] },
   { name: '07-mobile-today', route: '/', seed: [SEED_PROFILE, SEED_AI_CONFIG, SEED_DRAFT_INPUT], viewport: MOBILE },
+  {
+    // 固定底栏在 fullPage 截图里位置不可信，用视口截图滚到底确认主按钮没被遮住
+    name: '07b-mobile-today-bottom',
+    route: '/',
+    seed: [SEED_PROFILE, SEED_AI_CONFIG, SEED_DRAFT_INPUT],
+    viewport: MOBILE,
+    fullPage: false,
+    action: async page => {
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.waitForTimeout(400)
+    },
+  },
   { name: '08-mobile-history', route: '/history', seed: [SEED_PROFILE, SEED_DIARIES], viewport: MOBILE },
   { name: '09-mobile-settings', route: '/settings', seed: [SEED_PROFILE, SEED_AI_CONFIG, SEED_DIARIES], viewport: MOBILE },
 ]
@@ -193,7 +205,7 @@ async function main() {
     if (scenario.action) await scenario.action(page)
 
     const file = path.join(OUT, `${scenario.name}.png`)
-    await page.screenshot({ path: file, fullPage: true })
+    await page.screenshot({ path: file, fullPage: scenario.fullPage !== false })
     console.log(`shotted ${scenario.name}${errors.length ? '  [页面错误] ' + errors.join(' | ') : ''}`)
 
     await context.close()

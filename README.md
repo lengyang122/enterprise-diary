@@ -45,6 +45,17 @@ npm run test:watch # 测试监听模式
 npm run preview    # 预览构建产物
 ```
 
+### 界面截图（开发期人工核对）
+
+```bash
+node scripts/screenshot.mjs           # 全部场景
+node scripts/screenshot.mjs today     # 按名称前缀筛选
+```
+
+脚本内置静态服务器托管 `dist`，直接驱动系统已安装的 Edge（不下载浏览器），
+内置个人信息 / 日记 / AI 配置 / 草稿四种数据状态，覆盖桌面 1280×900 与移动 390×844，
+产出到 `screenshots/`（已 gitignore），同时收集页面 JS 错误。
+
 ## 测试
 
 ```bash
@@ -66,7 +77,9 @@ npm test
 
 ```
 src/
-├── components/layout/    # Layout / Sidebar / MobileNav
+├── components/
+│   ├── icons.tsx         # 统一线性图标（20x20 网格，currentColor）
+│   └── layout/           # Layout / Sidebar / MobileNav
 ├── lib/
 │   ├── ai.ts             # AI 调用：Prompt 构建、API 调用、生成主流程与降级策略
 │   ├── aiConfig.ts       # AI 接口配置读写
@@ -78,6 +91,9 @@ src/
 ├── pages/                # DiaryCreatePage / HistoryPage / SettingsPage
 ├── test/setup.ts         # 测试用最小 localStorage 桩
 └── types/index.ts        # 领域类型（即存储层的真实结构）
+
+scripts/
+└── screenshot.mjs        # 界面截图（驱动系统 Edge，产出到 screenshots/）
 ```
 
 ## 数据与隐私
@@ -132,4 +148,15 @@ localStorage 键名：
 - [x] **V1 数据安全** — 草稿自动保存与恢复、一键备份 / 导入 JSON
 - [x] **V2 Word 导出可靠性** — 替换保留前后文字、失配显式报错、导出前体检、批量导出 zip
 - [x] **V3 生成质量** — 字数达标评估与自动补写、单栏重新生成、字数状态展示、岗位联想
-- [ ] **V4 全站 UI 美化**
+- [x] **V4 全站视觉层级** — 设计令牌重做、卡片化层级、编号输入区、时间线卡片、空状态引导
+
+## 视觉体系
+
+- **底色与卡片**：页面底色 `#F4F4F1`，卡片纯白 + 1px 极淡描边 + 贴地阴影（`shadow-card`），
+  靠明度差而不是重边框来制造层次。
+- **强调色**：`#5B5FD6`，只用在主按钮、当前导航项、位置标签等少数需要「被看见」的地方。
+- **提示色**：`#B5761A`，仅用于字数不达标这类需要注意但不阻断的状态。
+- **文字层级**：正文 `#191A1E` / 次要 `#63636D` / 弱化 `#9B9BA4` 三级，拉开对比。
+- **组件类**：`card`、`btn-primary`、`btn-ghost`、`btn-quiet`、`chip` 统一定义在 `src/index.css`，
+  页面里不再各写一套按钮样式。
+- **可访问性**：`:focus-visible` 只在键盘聚焦时显示焦点环；图标统一由 `src/components/icons.tsx` 提供。

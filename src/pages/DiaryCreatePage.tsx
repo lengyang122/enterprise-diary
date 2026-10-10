@@ -3,23 +3,8 @@ import { generateDiaryContent, regenerateSection } from '../lib/ai'
 import { downloadWord, checkExportData, describeExportCheck } from '../lib/word'
 import { getProfile, insertDiary, getDraft, saveDraft, clearDraft } from '../lib/storage'
 import { evaluateSections, type SectionKey, type SectionQuality } from '../lib/text'
+import { PlusIcon, RefreshIcon, DownloadIcon } from '../components/icons'
 import type { Profile, DiaryFormInput, AIGeneratedResult, DiaryWordData } from '../types'
-
-// 常用实习岗位（仅作输入联想，仍可自由填写）
-const POSITION_PRESETS = [
-  'PQE',
-  'SQE',
-  'QE',
-  'PE',
-  'ME',
-  'IE',
-  'IQC',
-  'OQC',
-  '工艺工程师',
-  '设备工程师',
-  '生产管理',
-  '研发助理',
-]
 
 // 岗位持久化：记住上次设置的岗位（帮同学写日记时不用反复改）
 const POSITION_KEY = 'enterprise-diary-last-position'
@@ -37,6 +22,22 @@ function persistPosition(v: string) {
     // 忽略
   }
 }
+
+// 常用实习岗位（仅作输入联想，仍可自由填写）
+const POSITION_PRESETS = [
+  'PQE',
+  'SQE',
+  'QE',
+  'PE',
+  'ME',
+  'IE',
+  'IQC',
+  'OQC',
+  '工艺工程师',
+  '设备工程师',
+  '生产管理',
+  '研发助理',
+]
 
 export default function DiaryCreatePage() {
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -222,6 +223,8 @@ export default function DiaryCreatePage() {
     setAiResult(null)
     setSaved(false)
     setGenError('')
+    setExportError('')
+    setRegenError('')
     setRestored(false)
     void clearDraft()
   }
@@ -231,18 +234,16 @@ export default function DiaryCreatePage() {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center animate-fadeIn">
         <div className="text-center">
-          <div className="text-[15px] text-base-text tracking-wide mb-4">
-            正在替你整理今天…
-          </div>
-          <div className="flex items-center justify-center gap-1.5">
+          <div className="flex items-center justify-center gap-1.5 mb-5">
             {[0, 1, 2].map(i => (
               <span
                 key={i}
-                className="w-1 h-1 rounded-full bg-base-accent animate-softPulse"
-                style={{ animationDelay: `${i * 0.28}s` }}
+                className="w-1.5 h-1.5 rounded-full bg-base-accent animate-softPulse"
+                style={{ animationDelay: `${i * 0.24}s` }}
               />
             ))}
           </div>
+          <div className="text-[14px] text-base-secondary tracking-wide">正在替你整理今天…</div>
         </div>
       </div>
     )
@@ -254,28 +255,25 @@ export default function DiaryCreatePage() {
     const q = (key: SectionKey) => quality.find(item => item.key === key)!
 
     return (
-      <div className="space-y-8 animate-fadeIn">
+      <div className="space-y-6 animate-riseIn">
         {restored && <RestoreNotice onDismiss={() => setRestored(false)} />}
+
         {/* 顶部元信息 */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-base-secondary">
-            <span className="text-[15px] font-medium text-base-text">{form.date}</span>
-            <span className="text-base-muted">·</span>
-            <span>{form.position}</span>
-          </div>
-          <div className="flex items-center gap-1 text-xs text-base-muted">
-            <span className="inline-flex items-center gap-1">
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M13.5 8.5a5.5 5.5 0 1 1-4-5.3" />
-                <path d="M13.5 3v3h-3" />
-              </svg>
-              AI整理
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <span className="text-[17px] font-semibold text-base-text tracking-tight">
+              {form.date}
             </span>
+            <span className="chip bg-base-accent-soft text-base-accent">{form.position}</span>
           </div>
+          <span className="chip border border-base-line text-base-muted">
+            <RefreshIcon size={12} />
+            AI 整理
+          </span>
         </div>
 
-        {/* 结果 — 个人记录阅读状态 */}
-        <div className="space-y-10 max-w-[680px] mx-auto">
+        {/* 结果 — 卡片化，层次分明 */}
+        <div className="space-y-3">
           <ResultSection
             title="今天"
             quality={q('content')}
@@ -283,53 +281,40 @@ export default function DiaryCreatePage() {
             busy={regenerating === 'content'}
             onRegenerate={() => handleRegenerate('content')}
           />
-
           {aiResult.feelings && (
-            <>
-              <div className="border-t border-base-line/70" />
-              <ResultSection
-                title="收获"
-                quality={q('feelings')}
-                text={aiResult.feelings}
-                busy={regenerating === 'feelings'}
-                onRegenerate={() => handleRegenerate('feelings')}
-              />
-            </>
+            <ResultSection
+              title="收获"
+              quality={q('feelings')}
+              text={aiResult.feelings}
+              busy={regenerating === 'feelings'}
+              onRegenerate={() => handleRegenerate('feelings')}
+            />
           )}
-
           {aiResult.other && (
-            <>
-              <div className="border-t border-base-line/70" />
-              <ResultSection
-                title="值得记住的"
-                quality={q('other')}
-                text={aiResult.other}
-                busy={regenerating === 'other'}
-                onRegenerate={() => handleRegenerate('other')}
-              />
-            </>
+            <ResultSection
+              title="值得记住的"
+              quality={q('other')}
+              text={aiResult.other}
+              busy={regenerating === 'other'}
+              onRegenerate={() => handleRegenerate('other')}
+            />
           )}
         </div>
 
         {/* 操作区 */}
-        <div className="flex items-center justify-center gap-3 pt-4 max-w-[680px] mx-auto">
+        <div className="card px-4 py-3.5 flex flex-wrap items-center justify-center gap-2.5">
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-5 py-2 rounded-[11px] bg-base-accent text-white text-[13px] hover:opacity-90 active:scale-[0.98] transition-all duration-150 disabled:opacity-50"
+            className="btn-primary px-6 py-2.5 text-[13px]"
           >
             {saving ? '保存中…' : '保存今天'}
           </button>
-          <button
-            onClick={handleDownload}
-            className="px-5 py-2 rounded-[11px] border border-base-line text-base-secondary text-[13px] hover:bg-base-surface hover:text-base-text active:scale-[0.98] transition-all duration-150"
-          >
+          <button onClick={handleDownload} className="btn-ghost px-5 py-2.5 text-[13px]">
+            <DownloadIcon size={15} />
             下载 Word
           </button>
-          <button
-            onClick={handleReset}
-            className="px-5 py-2 rounded-[11px] text-[13px] text-base-muted hover:text-base-text transition-colors duration-150"
-          >
+          <button onClick={handleReset} className="btn-quiet px-4 py-2.5 text-[13px]">
             重写
           </button>
         </div>
@@ -342,7 +327,7 @@ export default function DiaryCreatePage() {
 
         {/* 保存成功提示 */}
         {saved && (
-          <div className="fixed bottom-8 right-8 px-4 py-2 rounded-[11px] bg-base-text text-base-surface text-[13px] shadow-soft animate-fadeIn z-50">
+          <div className="fixed bottom-8 right-8 px-4 py-2.5 rounded-button bg-base-text text-base-surface text-[13px] shadow-lift animate-fadeIn z-50">
             已保存
           </div>
         )}
@@ -352,12 +337,17 @@ export default function DiaryCreatePage() {
 
   // === 输入状态 ===
   return (
-    <div className="max-w-[680px] mx-auto space-y-12 animate-fadeIn">
-      {restored && <RestoreNotice onDismiss={() => setRestored(false)} />}
-      {/* 顶部标题 — 克制 */}
-      <div className="text-center">
-        <h2 className="text-[26px] font-medium tracking-tight text-base-text">今天</h2>
-        <div className="flex items-center justify-center gap-2 mt-3 text-[13px] text-base-secondary">
+    <div className="max-w-[720px] mx-auto animate-riseIn">
+      {restored && (
+        <div className="mb-5">
+          <RestoreNotice onDismiss={() => setRestored(false)} />
+        </div>
+      )}
+
+      {/* 顶部标题 */}
+      <div className="text-center pt-1 pb-7">
+        <h2 className="text-[28px] font-semibold tracking-tight text-base-text">今天</h2>
+        <div className="flex items-center justify-center gap-2 mt-4 text-[13px]">
           <EditableChip value={form.date} onChange={v => setForm(f => ({ ...f, date: v }))} />
           <span className="text-base-muted">·</span>
           <EditableChip
@@ -370,15 +360,17 @@ export default function DiaryCreatePage() {
           />
         </div>
         {profile && (
-          <p className="mt-4 text-xs text-base-muted">
-            {profile.name} · {profile.company}
+          <p className="mt-3.5 text-[12px] text-base-muted">
+            {profile.name}
+            {profile.company ? ` · ${profile.company}` : ''}
           </p>
         )}
       </div>
 
-      {/* 三个提示式输入区 */}
-      <div className="space-y-10">
+      {/* 三个输入区 */}
+      <div className="space-y-3.5">
         <PromptArea
+          index="01"
           title="今天发生了什么？"
           hint="现场工作、会议、异常、数据、沟通…"
           value={form.content}
@@ -386,6 +378,7 @@ export default function DiaryCreatePage() {
           placeholder="记录几个关键词就好，比如：参加异常分析会议、跟进锡膏印刷不良…"
         />
         <PromptArea
+          index="02"
           title="今天有什么收获？"
           hint="学到的方法、对质量的理解、新的认识…"
           value={form.feelings}
@@ -393,36 +386,26 @@ export default function DiaryCreatePage() {
           placeholder="例如：第一次接触5Why分析、理解了QCP的管控逻辑…"
         />
         <PromptArea
+          index="03"
           title="还有什么想留下？"
-          hint="临时事项、培训、会议、想记住的瞬间…"
+          hint="可留空"
           value={form.other}
           onChange={v => setForm(f => ({ ...f, other: v }))}
-          placeholder="可留空，AI 会结合今天的内容补充…"
+          placeholder="可留空。临时事项、培训、会议、想记住的瞬间…"
         />
       </div>
 
-      {/* 生成失败提示 — 显示在页面上，方便截图反馈 */}
-      {genError && <ErrorPanel title="生成失败" message={genError} />}
+      {/* 生成失败提示 */}
+      {genError && (
+        <div className="mt-5">
+          <ErrorPanel title="生成失败" message={genError} />
+        </div>
+      )}
 
       {/* AI 按钮 — 核心 CTA */}
-      <div className="flex justify-center pt-2 pb-6">
-        <button
-          onClick={handleGenerate}
-          className="group inline-flex items-center gap-2 px-7 py-2.5 rounded-[11px] bg-base-accent text-white text-[14px] font-medium hover:opacity-90 active:scale-[0.97] transition-all duration-150 shadow-soft"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 16 16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="transition-transform duration-200 group-hover:rotate-45"
-          >
-            <path d="M8 2v12M2 8h12" />
-          </svg>
+      <div className="flex justify-center pt-7 pb-2">
+        <button onClick={handleGenerate} className="btn-primary group px-8 py-3 text-[14px]">
+          <PlusIcon size={16} />
           整理今天
         </button>
       </div>
@@ -430,45 +413,42 @@ export default function DiaryCreatePage() {
   )
 }
 
-// 提示式输入区
+// ============================================================
+// 局部组件
+// ============================================================
+
+// 编号输入卡片：有明确边界，聚焦时描边点亮
 function PromptArea({
+  index,
   title,
   hint,
   value,
   onChange,
   placeholder,
 }: {
+  index: string
   title: string
   hint: string
   value: string
   onChange: (v: string) => void
   placeholder: string
 }) {
-  const [focused, setFocused] = useState(false)
-
   return (
-    <div className="transition-all duration-200">
-      <div className="flex items-baseline gap-3 mb-2.5">
-        <h3 className={`text-[15px] font-medium tracking-wide transition-colors duration-200 ${focused ? 'text-base-text' : 'text-base-secondary'}`}>
-          {title}
-        </h3>
-        <span className="text-[11px] text-base-muted">{hint}</span>
+    <div className="card px-5 py-4 transition-all duration-200 focus-within:border-base-accent/45 focus-within:shadow-lift">
+      <div className="flex items-center gap-2.5 mb-2.5">
+        <span className="w-[22px] h-[22px] shrink-0 grid place-items-center rounded-[7px] bg-base-accent-soft text-base-accent text-[11px] font-semibold tabular-nums">
+          {index}
+        </span>
+        <h3 className="text-[14px] font-medium text-base-text tracking-tight shrink-0">{title}</h3>
+        {/* 窄屏放不下提示，示例已在 placeholder 里 */}
+        <span className="ml-auto hidden sm:block text-[11px] text-base-muted">{hint}</span>
       </div>
       <textarea
         value={value}
         onChange={e => onChange(e.target.value)}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
         placeholder={placeholder}
-        rows={2}
-        className={`
-          w-full px-4 py-3 rounded-[12px] resize-none text-[14px] leading-relaxed text-base-text
-          transition-all duration-200
-          placeholder:text-base-muted
-          ${focused
-            ? 'bg-base-surface border border-base-accent/25'
-            : 'bg-transparent border border-transparent hover:bg-base-surface'}
-        `}
+        rows={3}
+        className="w-full bg-transparent resize-none text-[14px] leading-[1.85] text-base-text placeholder:text-base-muted/80"
       />
     </div>
   )
@@ -512,7 +492,7 @@ function EditableChip({
             if (e.key === 'Enter') commit()
             if (e.key === 'Escape') setEditing(false)
           }}
-          className="w-28 px-2 py-0.5 text-center text-[13px] text-base-text bg-base-surface border border-base-accent/30 rounded-full focus:outline-none"
+          className="w-28 px-3 py-1 text-center text-[13px] text-base-text bg-base-surface border border-base-accent rounded-full shadow-soft"
         />
         {options && (
           <datalist id="position-presets">
@@ -528,43 +508,15 @@ function EditableChip({
   return (
     <button
       onClick={startEdit}
-      className="group inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-base-surface border border-base-line/70 text-base-text hover:border-base-accent/40 transition-colors duration-150"
+      className="chip border border-base-line bg-base-surface px-3 py-1 text-[13px] text-base-text shadow-soft hover:border-base-accent/40 transition-colors duration-200"
       title="点击修改"
     >
       {value}
-      <svg
-        width="10"
-        height="10"
-        viewBox="0 0 16 16"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-base-muted opacity-0 group-hover:opacity-100 transition-opacity"
-      >
-        <path d="M11.5 2.5l2 2L5 13H3v-2l8.5-8.5z" />
-      </svg>
     </button>
   )
 }
 
-// 草稿恢复提示 — 安静的一行，可关闭
-function RestoreNotice({ onDismiss }: { onDismiss: () => void }) {
-  return (
-    <div className="rounded-[12px] border border-base-accent/20 bg-base-accent-soft px-4 py-3 flex items-center justify-between gap-4">
-      <p className="text-[12px] text-base-secondary">已恢复上次未完成的草稿</p>
-      <button
-        onClick={onDismiss}
-        className="shrink-0 text-[12px] text-base-muted hover:text-base-text transition-colors duration-150"
-      >
-        知道了
-      </button>
-    </div>
-  )
-}
-
-// 生成结果的单栏：标题 + 字数达标状态 + 正文 + 单栏重新生成
+// 生成结果的单栏卡片：标题 + 字数状态 + 正文 + 单栏重新生成
 function ResultSection({
   title,
   quality,
@@ -578,12 +530,15 @@ function ResultSection({
   busy: boolean
   onRegenerate: () => void
 }) {
+  const warn = quality.tooShort || quality.tooLong
+  const tone = warn ? 'bg-base-amber-soft text-base-amber' : 'bg-base-accent-soft text-base-accent'
+
   return (
-    <section>
-      <div className="flex items-baseline justify-between gap-3 mb-3">
-        <h3 className="text-[13px] font-medium text-base-secondary tracking-wide">{title}</h3>
-        <div className="flex items-center gap-3">
-          <span className={`text-[11px] ${quality.tooShort ? 'text-amber-600' : 'text-base-muted'}`}>
+    <section className="card px-5 py-4 md:px-6 md:py-5">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <h3 className="text-[13px] font-semibold text-base-text tracking-wide">{title}</h3>
+        <div className="flex items-center gap-2">
+          <span className={`chip ${tone}`}>
             {quality.count} 字
             {quality.tooShort && ` · 少于 ${quality.min}`}
             {quality.tooLong && ` · 超过 ${quality.max}`}
@@ -592,14 +547,28 @@ function ResultSection({
           <button
             onClick={onRegenerate}
             disabled={busy}
-            className="text-[11px] text-base-muted hover:text-base-accent transition-colors duration-150 disabled:opacity-50"
+            className="btn-quiet text-[11px] disabled:opacity-50"
+            title="只重写这一栏"
           >
+            <RefreshIcon size={12} />
             {busy ? '重写中…' : '重新生成'}
           </button>
         </div>
       </div>
-      <p className="text-[15px] leading-[1.9] text-base-text whitespace-pre-wrap">{text}</p>
+      <p className="text-[14.5px] leading-[1.95] text-base-text whitespace-pre-wrap">{text}</p>
     </section>
+  )
+}
+
+// 草稿恢复提示 — 一行轻提示，可关闭
+function RestoreNotice({ onDismiss }: { onDismiss: () => void }) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-card border border-base-accent/25 bg-base-accent-soft px-4 py-2.5">
+      <p className="text-[12px] text-base-secondary">已恢复上次未完成的草稿</p>
+      <button onClick={onDismiss} className="btn-quiet text-[12px]">
+        知道了
+      </button>
+    </div>
   )
 }
 
@@ -618,15 +587,15 @@ function ErrorPanel({ title, message }: { title: string; message: string }) {
   }
 
   return (
-    <div className="max-w-[680px] mx-auto rounded-[14px] border border-red-200 bg-red-50/60 px-5 py-4 animate-fadeIn">
+    <div className="rounded-card border border-red-200 bg-red-50/70 px-5 py-4">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-medium text-red-700 mb-1.5">{title}</p>
-          <p className="text-[13px] text-red-600 leading-relaxed break-all">{message}</p>
+          <p className="text-[13px] font-semibold text-red-700 mb-1.5">{title}</p>
+          <p className="text-[12.5px] text-red-600 leading-relaxed break-all">{message}</p>
         </div>
         <button
           onClick={copy}
-          className="shrink-0 px-3 py-1.5 rounded-[9px] border border-red-200 text-[12px] text-red-600 hover:bg-red-100 transition-colors"
+          className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-[9px] border border-red-200 text-[11.5px] text-red-600 hover:bg-red-100 transition-colors duration-200"
         >
           {copied ? '已复制' : '复制'}
         </button>

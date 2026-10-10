@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import HistoryPage from './HistoryPage'
 import { downloadAllWords, downloadWord } from '../lib/word'
 import { EMPTY_PROFILE } from '../lib/storage'
@@ -28,6 +29,15 @@ function seed(data: DiaryEntry[]) {
   localStorage.setItem(entriesKey, JSON.stringify(data))
 }
 
+// 页面内含 <Link>，需要 Router 上下文
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <HistoryPage />
+    </MemoryRouter>
+  )
+}
+
 describe('HistoryPage', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -39,14 +49,14 @@ describe('HistoryPage', () => {
 
   it('无记录时不显示「导出全部」', async () => {
     seed([])
-    render(<HistoryPage />)
+    renderPage()
     await screen.findByText('还没有记录')
     expect(screen.queryByText('导出全部')).toBeNull()
   })
 
   it('有记录时显示篇数与「导出全部」', async () => {
     seed([entry('a', '9月2日', '内容A'), entry('b', '9月3日', '内容B')])
-    render(<HistoryPage />)
+    renderPage()
 
     expect(await screen.findByText('2 篇记录')).toBeTruthy()
     expect(screen.getByText('导出全部')).toBeTruthy()
@@ -56,7 +66,7 @@ describe('HistoryPage', () => {
     seed([entry('a', '9月2日', '内容A'), entry('b', '9月3日', '内容B')])
     vi.mocked(downloadAllWords).mockResolvedValue('全部.zip')
 
-    render(<HistoryPage />)
+    renderPage()
     fireEvent.click(await screen.findByText('导出全部'))
 
     await waitFor(() => expect(downloadAllWords).toHaveBeenCalledTimes(1))
@@ -69,7 +79,7 @@ describe('HistoryPage', () => {
     seed([entry('a', '9月2日', '内容A')])
     vi.mocked(downloadAllWords).mockRejectedValue(new Error('导出失败：模板已变更'))
 
-    render(<HistoryPage />)
+    renderPage()
     fireEvent.click(await screen.findByText('导出全部'))
 
     expect(await screen.findByText('导出失败')).toBeTruthy()
@@ -81,7 +91,7 @@ describe('HistoryPage', () => {
     const confirmMock = vi.fn(() => false)
     ;(globalThis as unknown as { confirm: unknown }).confirm = confirmMock
 
-    render(<HistoryPage />)
+    renderPage()
     fireEvent.click(await screen.findByText('内容A'))
 
     fireEvent.click(await screen.findByText('下载 Word'))
