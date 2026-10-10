@@ -151,3 +151,55 @@ export function stripMarkers(text: string): string {
     .replace(/\s+/g, ' ')
     .trim()
 }
+
+// ============================================================
+// 字数目标与达标评估
+// ============================================================
+
+export interface SectionTarget {
+  key: SectionKey
+  label: string
+  min: number
+  max: number
+}
+
+// 各栏目的字数目标（按汉字计）
+export const SECTION_TARGETS: SectionTarget[] = [
+  { key: 'content', label: '实习内容', min: 150, max: 200 },
+  { key: 'feelings', label: '实习体会和感受', min: 150, max: 200 },
+  { key: 'other', label: '其他', min: 80, max: 120 },
+]
+
+export interface SectionQuality extends SectionTarget {
+  count: number
+  /** 空栏目不算「不达标」—— 那是没生成出来，不是长度问题 */
+  empty: boolean
+  ok: boolean
+  tooShort: boolean
+  tooLong: boolean
+}
+
+export type SectionTexts = Record<SectionKey, string>
+
+// 评估三栏字数是否落在目标区间
+export function evaluateSections(texts: Partial<SectionTexts>): SectionQuality[] {
+  return SECTION_TARGETS.map(t => {
+    const raw = texts[t.key] ?? ''
+    const count = countHanzi(raw)
+    const empty = !raw.trim()
+    return {
+      ...t,
+      count,
+      empty,
+      tooShort: !empty && count < t.min,
+      tooLong: count > t.max,
+      ok: empty || (count >= t.min && count <= t.max),
+    }
+  })
+}
+
+// 偏短的栏目（用于触发补写）
+export function shortSections(texts: Partial<SectionTexts>): SectionQuality[] {
+  return evaluateSections(texts).filter(q => q.tooShort)
+}
+

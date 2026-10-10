@@ -5,6 +5,8 @@ import {
   parseSections,
   sectionScore,
   stripMarkers,
+  evaluateSections,
+  shortSections,
 } from './text'
 
 describe('countHanzi', () => {
@@ -103,5 +105,57 @@ describe('stripMarkers', () => {
     expect(stripMarkers('===实习内容=== 今天在车间。 【其他】 质量第一。')).toBe(
       '今天在车间。 质量第一。'
     )
+  })
+})
+
+describe('evaluateSections', () => {
+  const hanzi = (n: number) => '质'.repeat(n)
+
+  it('全部落在目标区间时判定达标', () => {
+    const q = evaluateSections({ content: hanzi(170), feelings: hanzi(170), other: hanzi(100) })
+    expect(q.map(x => x.count)).toEqual([170, 170, 100])
+    expect(q.every(x => x.ok)).toBe(true)
+    expect(q.every(x => !x.tooShort && !x.tooLong && !x.empty)).toBe(true)
+  })
+
+  it('低于下限标记为偏短', () => {
+    const q = evaluateSections({ content: hanzi(100), feelings: hanzi(170), other: hanzi(100) })
+    const content = q.find(x => x.key === 'content')!
+    expect(content.tooShort).toBe(true)
+    expect(content.ok).toBe(false)
+    expect(content.min).toBe(150)
+  })
+
+  it('高于上限标记为偏长', () => {
+    const q = evaluateSections({ content: hanzi(230), feelings: hanzi(170), other: hanzi(100) })
+    const content = q.find(x => x.key === 'content')!
+    expect(content.tooLong).toBe(true)
+    expect(content.ok).toBe(false)
+  })
+
+  it('空栏目既不算达标也不算偏短', () => {
+    const q = evaluateSections({ content: hanzi(170), feelings: '', other: '' })
+    const feelings = q.find(x => x.key === 'feelings')!
+    expect(feelings.empty).toBe(true)
+    expect(feelings.tooShort).toBe(false)
+    expect(feelings.ok).toBe(true)
+  })
+})
+
+describe('shortSections', () => {
+  const hanzi = (n: number) => '质'.repeat(n)
+
+  it('只返回偏短的栏目', () => {
+    const short = shortSections({ content: hanzi(100), feelings: hanzi(170), other: '' })
+    expect(short.map(x => x.key)).toEqual(['content'])
+  })
+
+  it('全部达标时返回空数组', () => {
+    const short = shortSections({
+      content: hanzi(170),
+      feelings: hanzi(170),
+      other: hanzi(100),
+    })
+    expect(short).toEqual([])
   })
 })

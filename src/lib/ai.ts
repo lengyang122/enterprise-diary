@@ -1,5 +1,15 @@
 import type { DiaryFormInput, AIGeneratedResult } from '../types'
-import { countHanzi, truncateToSentence, parseSections, sectionScore, stripMarkers } from './text'
+import {
+  countHanzi,
+  truncateToSentence,
+  parseSections,
+  sectionScore,
+  stripMarkers,
+  shortSections,
+  SECTION_TARGETS,
+  type SectionKey,
+  type SectionTarget,
+} from './text'
 import { getAIConfig, type AIConfig } from './aiConfig'
 
 // ============================================================
@@ -153,20 +163,10 @@ async function callAI(config: AIConfig, input: DiaryFormInput, retryHint = ''): 
   return callAPI(config, buildPrompt(input) + retryHint, 4000, retryHint ? 0.8 : 0.7)
 }
 
-// 逐段生成：每次只生成一个栏目（任务小、思考短，不会耗尽预算）
-async function generateBySections(config: AIConfig, input: DiaryFormInput): Promise<AIGeneratedResult> {
-  console.log('[AI] 切换逐段生成模式')
-  const defs: { key: 'content' | 'feelings' | 'other'; label: string; target: string; max: number }[] = [
-    { key: 'content', label: '实习内容', target: '约150-200字', max: 200 },
-    { key: 'feelings', label: '实习体会和感受', target: '约150-200字', max: 200 },
-    { key: 'other', label: '其他', target: '约80-120字', max: 120 },
-  ]
+// ---- 单栏生成 ----
 
-  const result: AIGeneratedResult = { content: '', feelings: '', other: '' }
-
-  for (const def of defs) {
-    try {
-      const prompt = `根据今天的实习记录草稿，写企业实践日记中【${def.label}】一栏的内容（${def.target}）。
+function sectionPrompt(def: SectionTarget, input: DiaryFormInput, extra = ''): string {
+  return `根据今天的实习记录草稿，写企业实践日记中【${def.label}】一栏的内容（${def.min}-${def.max} 字，按汉字计，不得少于 ${def.min} 字）。
 
 实习岗位：${input.position || '实习生'}
 
@@ -175,9 +175,30 @@ async function generateBySections(config: AIConfig, input: DiaryFormInput): Prom
 - 实习体会：${input.feelings || '（无）'}
 - 其他：${input.other || '（无）'}
 
-只输出这一栏的正文，不要标题、标记或解释。`
-      const raw = await callAPI(config, prompt, 4000, 0.7)
-      result[def.key] = truncateToSentence(stripMarkers(raw), def.max)
+只输出这一栏的正文，不要标题、标记或解释。${extra}`
+}
+
+async function generateOneSection(
+  config: AIConfig,
+  input: DiaryFormInput,
+  def: SectionTarget,
+  extra = ''
+): Promise<string> {
+  const raw = await callAPI(config, sectionPrompt(def, input, extra), 4000, 0.7)
+  return truncateToSentence(stripMarkers(raw), def.max)
+}
+
+// 逐段生成：每次只生成一个栏目（任务小、思考短，不会耗尽预算）
+async function generateBySections(
+  config: AIConfig,
+  input: DiaryFormInput
+): Promise<AIGeneratedResult> {
+  console.log('[AI] 切换逐段生成模式')
+  const result: AIGeneratedResult = { content: '', feelings: '', other: '' }
+
+  for (const def of SECTION_TARGETS) {
+    try {
+      result[def.key] = await generateOneSection(config, input, def)
       console.log(`[AI] ${def.label} 生成成功:`, countHanzi(result[def.key]), '字')
     } catch (e) {
       console.warn(`[AI] ${def.label} 逐段生成失败`, e)
@@ -189,6 +210,62 @@ async function generateBySections(config: AIConfig, input: DiaryFormInput): Prom
     throw new Error('AI 生成失败（逐段模式也不可用），请稍后重试。')
   }
   return result
+}
+
+// 偏短栏目补写一次（每栏最多一次，避免请求量失控）
+async function topUpShortSections(
+  config: AIConfig,
+  input: DiaryFormInput,
+  result: AIGeneratedResult
+): Promise<AIGeneratedResult> {
+  const short = shortSections(result)
+  if (!short.length) return result
+
+  const out: AIGeneratedResult = { ...result }
+
+  for (const q of short) {
+    console.log(`[AI] ${q.label} 仅 ${q.count} 字（目标 ${q.min}-${q.max}），补写一次`)
+    try {
+      const rewritten = await generateOneSection(
+        config,
+        input,
+        q,
+        `\n\n注意：上一版只有 ${q.count} 字，太短。请务必写满 ${q.min}-${q.max} 字，补充具体细节。`
+      )
+      // 只在确实变长时采用，避免越补越短
+      if (countHanzi(rewritten) > q.count) {
+        out[q.key] = rewritten
+      }
+    } catch (e) {
+      console.warn(`[AI] ${q.label} 补写失败，保留原内容`, e)
+    }
+  }
+
+  return out
+}
+
+// 供界面调用的单栏重生成
+export async function regenerateSection(
+  key: SectionKey,
+  input: DiaryFormInput,
+  current = ''
+): Promise<string> {
+  const config = getAIConfig()
+  if (!config.apiKey) {
+    throw new Error('请先在设置中配置 AI API Key')
+  }
+
+  const def = SECTION_TARGETS.find(t => t.key === key)
+  if (!def) {
+    throw new Error(`未知栏目：${key}`)
+  }
+
+  return generateOneSection(
+    config,
+    input,
+    def,
+    current ? '\n\n注意：换一种写法，不要与上一版雷同。' : ''
+  )
 }
 
 // ============================================================
@@ -209,7 +286,7 @@ export async function generateDiaryContent(input: DiaryFormInput): Promise<AIGen
     const isEmpty = e instanceof Error && (e.name === 'EmptyContentError' || e.message.includes('空内容'))
     if (isEmpty) {
       console.warn('[AI] 整篇生成空内容（推理预算耗尽），切换逐段生成')
-      return await generateBySections(config, input)
+      return await topUpShortSections(config, input, await generateBySections(config, input))
     }
     throw e
   }
@@ -246,18 +323,27 @@ export async function generateDiaryContent(input: DiaryFormInput): Promise<AIGen
     if (!fallbackContent.trim()) {
       throw new Error('AI 生成结果为空，请稍后重试。')
     }
-    return {
+    return await topUpShortSections(config, input, {
       content: fallbackContent,
       feelings: '',
       other: '',
-    }
+    })
   }
 
   const content = truncateToSentence(parsed.content, 200)
   const feelings = truncateToSentence(parsed.feelings, 200)
   const other = truncateToSentence(parsed.other, 120)
 
-  console.log('[AI] 字数: 实习内容', countHanzi(content), '| 体会', countHanzi(feelings), '| 其他', countHanzi(other))
+  const result = await topUpShortSections(config, input, { content, feelings, other })
 
-  return { content, feelings, other }
+  console.log(
+    '[AI] 最终字数: 实习内容',
+    countHanzi(result.content),
+    '| 体会',
+    countHanzi(result.feelings),
+    '| 其他',
+    countHanzi(result.other)
+  )
+
+  return result
 }

@@ -1,8 +1,25 @@
 import { useState, useEffect } from 'react'
-import { generateDiaryContent } from '../lib/ai'
+import { generateDiaryContent, regenerateSection } from '../lib/ai'
 import { downloadWord, checkExportData, describeExportCheck } from '../lib/word'
 import { getProfile, insertDiary, getDraft, saveDraft, clearDraft } from '../lib/storage'
+import { evaluateSections, type SectionKey, type SectionQuality } from '../lib/text'
 import type { Profile, DiaryFormInput, AIGeneratedResult, DiaryWordData } from '../types'
+
+// 常用实习岗位（仅作输入联想，仍可自由填写）
+const POSITION_PRESETS = [
+  'PQE',
+  'SQE',
+  'QE',
+  'PE',
+  'ME',
+  'IE',
+  'IQC',
+  'OQC',
+  '工艺工程师',
+  '设备工程师',
+  '生产管理',
+  '研发助理',
+]
 
 // 岗位持久化：记住上次设置的岗位（帮同学写日记时不用反复改）
 const POSITION_KEY = 'enterprise-diary-last-position'
@@ -29,6 +46,8 @@ export default function DiaryCreatePage() {
   const [aiResult, setAiResult] = useState<AIGeneratedResult | null>(null)
   const [genError, setGenError] = useState('')
   const [exportError, setExportError] = useState('')
+  const [regenerating, setRegenerating] = useState<SectionKey | null>(null)
+  const [regenError, setRegenError] = useState('')
   // 草稿：restored 用于提示，ready 表示恢复流程已结束（此前不写库，避免覆盖已有草稿）
   const [restored, setRestored] = useState(false)
   const [ready, setReady] = useState(false)
@@ -174,6 +193,23 @@ export default function DiaryCreatePage() {
     }
   }
 
+  // 单栏重新生成
+  async function handleRegenerate(key: SectionKey) {
+    if (!aiResult) return
+    setRegenerating(key)
+    setRegenError('')
+    try {
+      const text = await regenerateSection(key, form, aiResult[key])
+      setAiResult(prev => (prev ? { ...prev, [key]: text } : prev))
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
+      console.error('[重新生成失败]', e)
+      setRegenError(msg)
+    } finally {
+      setRegenerating(null)
+    }
+  }
+
   // 重置（保留当前岗位，清空其他内容）
   function handleReset() {
     setForm({
@@ -214,6 +250,9 @@ export default function DiaryCreatePage() {
 
   // === AI 生成完成状态 ===
   if (aiResult) {
+    const quality = evaluateSections(aiResult)
+    const q = (key: SectionKey) => quality.find(item => item.key === key)!
+
     return (
       <div className="space-y-8 animate-fadeIn">
         {restored && <RestoreNotice onDismiss={() => setRestored(false)} />}
@@ -237,28 +276,37 @@ export default function DiaryCreatePage() {
 
         {/* 结果 — 个人记录阅读状态 */}
         <div className="space-y-10 max-w-[680px] mx-auto">
-          <section>
-            <h3 className="text-[13px] font-medium text-base-secondary mb-3 tracking-wide">今天</h3>
-            <p className="text-[15px] leading-[1.9] text-base-text whitespace-pre-wrap">{aiResult.content}</p>
-          </section>
+          <ResultSection
+            title="今天"
+            quality={q('content')}
+            text={aiResult.content}
+            busy={regenerating === 'content'}
+            onRegenerate={() => handleRegenerate('content')}
+          />
 
           {aiResult.feelings && (
             <>
               <div className="border-t border-base-line/70" />
-              <section>
-                <h3 className="text-[13px] font-medium text-base-secondary mb-3 tracking-wide">收获</h3>
-                <p className="text-[15px] leading-[1.9] text-base-text whitespace-pre-wrap">{aiResult.feelings}</p>
-              </section>
+              <ResultSection
+                title="收获"
+                quality={q('feelings')}
+                text={aiResult.feelings}
+                busy={regenerating === 'feelings'}
+                onRegenerate={() => handleRegenerate('feelings')}
+              />
             </>
           )}
 
           {aiResult.other && (
             <>
               <div className="border-t border-base-line/70" />
-              <section>
-                <h3 className="text-[13px] font-medium text-base-secondary mb-3 tracking-wide">值得记住的</h3>
-                <p className="text-[15px] leading-[1.9] text-base-text whitespace-pre-wrap">{aiResult.other}</p>
-              </section>
+              <ResultSection
+                title="值得记住的"
+                quality={q('other')}
+                text={aiResult.other}
+                busy={regenerating === 'other'}
+                onRegenerate={() => handleRegenerate('other')}
+              />
             </>
           )}
         </div>
@@ -289,6 +337,9 @@ export default function DiaryCreatePage() {
         {/* 导出失败提示 */}
         {exportError && <ErrorPanel title="导出失败" message={exportError} />}
 
+        {/* 重新生成失败提示 */}
+        {regenError && <ErrorPanel title="重新生成失败" message={regenError} />}
+
         {/* 保存成功提示 */}
         {saved && (
           <div className="fixed bottom-8 right-8 px-4 py-2 rounded-[11px] bg-base-text text-base-surface text-[13px] shadow-soft animate-fadeIn z-50">
@@ -311,6 +362,7 @@ export default function DiaryCreatePage() {
           <span className="text-base-muted">·</span>
           <EditableChip
             value={form.position}
+            options={POSITION_PRESETS}
             onChange={v => {
               setForm(f => ({ ...f, position: v }))
               persistPosition(v)
@@ -426,9 +478,11 @@ function PromptArea({
 function EditableChip({
   value,
   onChange,
+  options,
 }: {
   value: string
   onChange: (v: string) => void
+  options?: string[]
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(value)
@@ -446,18 +500,28 @@ function EditableChip({
 
   if (editing) {
     return (
-      <input
-        autoFocus
-        type="text"
-        value={draft}
-        onChange={e => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={e => {
-          if (e.key === 'Enter') commit()
-          if (e.key === 'Escape') setEditing(false)
-        }}
-        className="w-28 px-2 py-0.5 text-center text-[13px] text-base-text bg-base-surface border border-base-accent/30 rounded-full focus:outline-none"
-      />
+      <>
+        <input
+          autoFocus
+          type="text"
+          list={options ? 'position-presets' : undefined}
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={e => {
+            if (e.key === 'Enter') commit()
+            if (e.key === 'Escape') setEditing(false)
+          }}
+          className="w-28 px-2 py-0.5 text-center text-[13px] text-base-text bg-base-surface border border-base-accent/30 rounded-full focus:outline-none"
+        />
+        {options && (
+          <datalist id="position-presets">
+            {options.map(o => (
+              <option key={o} value={o} />
+            ))}
+          </datalist>
+        )}
+      </>
     )
   }
 
@@ -497,6 +561,45 @@ function RestoreNotice({ onDismiss }: { onDismiss: () => void }) {
         知道了
       </button>
     </div>
+  )
+}
+
+// 生成结果的单栏：标题 + 字数达标状态 + 正文 + 单栏重新生成
+function ResultSection({
+  title,
+  quality,
+  text,
+  busy,
+  onRegenerate,
+}: {
+  title: string
+  quality: SectionQuality
+  text: string
+  busy: boolean
+  onRegenerate: () => void
+}) {
+  return (
+    <section>
+      <div className="flex items-baseline justify-between gap-3 mb-3">
+        <h3 className="text-[13px] font-medium text-base-secondary tracking-wide">{title}</h3>
+        <div className="flex items-center gap-3">
+          <span className={`text-[11px] ${quality.tooShort ? 'text-amber-600' : 'text-base-muted'}`}>
+            {quality.count} 字
+            {quality.tooShort && ` · 少于 ${quality.min}`}
+            {quality.tooLong && ` · 超过 ${quality.max}`}
+            {!quality.empty && quality.ok && ' · 达标'}
+          </span>
+          <button
+            onClick={onRegenerate}
+            disabled={busy}
+            className="text-[11px] text-base-muted hover:text-base-accent transition-colors duration-150 disabled:opacity-50"
+          >
+            {busy ? '重写中…' : '重新生成'}
+          </button>
+        </div>
+      </div>
+      <p className="text-[15px] leading-[1.9] text-base-text whitespace-pre-wrap">{text}</p>
+    </section>
   )
 }
 
