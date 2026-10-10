@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { generateDiaryContent } from '../lib/ai'
-import { downloadWord } from '../lib/word'
+import { downloadWord, checkExportData, describeExportCheck } from '../lib/word'
 import { getProfile, insertDiary, getDraft, saveDraft, clearDraft } from '../lib/storage'
-import type { Profile, DiaryFormInput, AIGeneratedResult } from '../types'
+import type { Profile, DiaryFormInput, AIGeneratedResult, DiaryWordData } from '../types'
 
 // 岗位持久化：记住上次设置的岗位（帮同学写日记时不用反复改）
 const POSITION_KEY = 'enterprise-diary-last-position'
@@ -28,7 +28,7 @@ export default function DiaryCreatePage() {
   const [saved, setSaved] = useState(false)
   const [aiResult, setAiResult] = useState<AIGeneratedResult | null>(null)
   const [genError, setGenError] = useState('')
-  const [copied, setCopied] = useState(false)
+  const [exportError, setExportError] = useState('')
   // 草稿：restored 用于提示，ready 表示恢复流程已结束（此前不写库，避免覆盖已有草稿）
   const [restored, setRestored] = useState(false)
   const [ready, setReady] = useState(false)
@@ -107,17 +107,6 @@ export default function DiaryCreatePage() {
     }
   }
 
-  // 复制错误信息
-  async function copyError() {
-    try {
-      await navigator.clipboard.writeText(genError)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      // 忽略
-    }
-  }
-
   // 保存
   async function handleSave() {
     if (!profile) {
@@ -153,26 +142,35 @@ export default function DiaryCreatePage() {
   // 下载 Word
   async function handleDownload() {
     if (!profile || !aiResult) return
+
+    const data: DiaryWordData = {
+      name: profile.name,
+      student_id: profile.student_id,
+      class_name: profile.class_name,
+      college: profile.college,
+      teacher: profile.teacher,
+      company: profile.company,
+      company_teacher: profile.company_teacher,
+      start_date: profile.start_date,
+      end_date: profile.end_date,
+      date: form.date,
+      position: form.position,
+      content: aiResult.content,
+      feelings: aiResult.feelings,
+      other: aiResult.other,
+    }
+
+    // 导出前体检：信息缺失时先提示（Word 中对应位置会留空）
+    const warning = describeExportCheck(checkExportData(data))
+    if (warning && !confirm(`${warning}。\n\n仍要导出吗？Word 中对应位置会留空。`)) return
+
+    setExportError('')
     try {
-      await downloadWord({
-        name: profile.name,
-        student_id: profile.student_id,
-        class_name: profile.class_name,
-        college: profile.college,
-        teacher: profile.teacher,
-        company: profile.company,
-        company_teacher: profile.company_teacher,
-        start_date: profile.start_date,
-        end_date: profile.end_date,
-        date: form.date,
-        position: form.position,
-        content: aiResult.content,
-        feelings: aiResult.feelings,
-        other: aiResult.other,
-      })
+      await downloadWord(data)
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
-      alert('下载失败: ' + msg)
+      console.error('[导出失败]', e)
+      setExportError(msg)
     }
   }
 
@@ -288,6 +286,9 @@ export default function DiaryCreatePage() {
           </button>
         </div>
 
+        {/* 导出失败提示 */}
+        {exportError && <ErrorPanel title="导出失败" message={exportError} />}
+
         {/* 保存成功提示 */}
         {saved && (
           <div className="fixed bottom-8 right-8 px-4 py-2 rounded-[11px] bg-base-text text-base-surface text-[13px] shadow-soft animate-fadeIn z-50">
@@ -349,25 +350,7 @@ export default function DiaryCreatePage() {
       </div>
 
       {/* 生成失败提示 — 显示在页面上，方便截图反馈 */}
-      {genError && (
-        <div className="max-w-[680px] mx-auto rounded-[14px] border border-red-200 bg-red-50/60 px-5 py-4 animate-fadeIn">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-medium text-red-700 mb-1.5">生成失败</p>
-              <p className="text-[13px] text-red-600 leading-relaxed break-all">{genError}</p>
-            </div>
-            <button
-              onClick={copyError}
-              className="shrink-0 px-3 py-1.5 rounded-[9px] border border-red-200 text-[12px] text-red-600 hover:bg-red-100 transition-colors"
-            >
-              {copied ? '已复制' : '复制'}
-            </button>
-          </div>
-          <p className="text-[11px] text-red-400 mt-2.5">
-            请截图或复制以上信息发给开发者排查
-          </p>
-        </div>
-      )}
+      {genError && <ErrorPanel title="生成失败" message={genError} />}
 
       {/* AI 按钮 — 核心 CTA */}
       <div className="flex justify-center pt-2 pb-6">
@@ -513,6 +496,39 @@ function RestoreNotice({ onDismiss }: { onDismiss: () => void }) {
       >
         知道了
       </button>
+    </div>
+  )
+}
+
+// 错误提示 — 显示在页面上而不是 alert，附带一键复制，方便截图反馈
+function ErrorPanel({ title, message }: { title: string; message: string }) {
+  const [copied, setCopied] = useState(false)
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(message)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // 忽略
+    }
+  }
+
+  return (
+    <div className="max-w-[680px] mx-auto rounded-[14px] border border-red-200 bg-red-50/60 px-5 py-4 animate-fadeIn">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] font-medium text-red-700 mb-1.5">{title}</p>
+          <p className="text-[13px] text-red-600 leading-relaxed break-all">{message}</p>
+        </div>
+        <button
+          onClick={copy}
+          className="shrink-0 px-3 py-1.5 rounded-[9px] border border-red-200 text-[12px] text-red-600 hover:bg-red-100 transition-colors"
+        >
+          {copied ? '已复制' : '复制'}
+        </button>
+      </div>
+      <p className="text-[11px] text-red-400 mt-2.5">请截图或复制以上信息发给开发者排查</p>
     </div>
   )
 }

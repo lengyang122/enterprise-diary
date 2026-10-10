@@ -1,7 +1,13 @@
 import { useState, useEffect } from 'react'
 import { getProfile, getDiaries, deleteDiary } from '../lib/storage'
-import { downloadWord } from '../lib/word'
-import type { Profile, DiaryEntry } from '../types'
+import {
+  downloadWord,
+  downloadAllWords,
+  defaultWordFileName,
+  checkExportData,
+  describeExportCheck,
+} from '../lib/word'
+import type { Profile, DiaryEntry, DiaryWordData } from '../types'
 
 // 从日期字符串解析 "8月23日" 或旧格式 "7.17" → { month, day }
 function parseDate(dateStr: string | undefined | null): { month: string; day: string } {
@@ -20,6 +26,8 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true)
   const [selectedEntry, setSelectedEntry] = useState<DiaryEntry | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [exportError, setExportError] = useState('')
+  const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -47,28 +55,66 @@ export default function HistoryPage() {
     if (selectedEntry?.id === id) setSelectedEntry(null)
   }
 
+  // 组装 Word 导出数据
+  function toWordData(entry: DiaryEntry, prof: Profile): DiaryWordData {
+    return {
+      name: prof.name,
+      student_id: prof.student_id,
+      class_name: prof.class_name,
+      college: prof.college,
+      teacher: prof.teacher,
+      company: prof.company,
+      company_teacher: prof.company_teacher,
+      start_date: prof.start_date,
+      end_date: prof.end_date,
+      date: entry.date,
+      position: entry.position,
+      content: entry.content,
+      feelings: entry.feelings,
+      other: entry.other,
+    }
+  }
+
+  // 导出前体检：信息缺失时先提示（Word 中对应位置会留空）
+  function confirmIfIncomplete(data: DiaryWordData): boolean {
+    const warning = describeExportCheck(checkExportData(data))
+    if (!warning) return true
+    return confirm(`${warning}。\n\n仍要导出吗？Word 中对应位置会留空。`)
+  }
+
   async function handleDownload(entry: DiaryEntry) {
     if (!profile) return
+    const data = toWordData(entry, profile)
+    if (!confirmIfIncomplete(data)) return
+
+    setExportError('')
     try {
-      await downloadWord({
-        name: profile.name,
-        student_id: profile.student_id,
-        class_name: profile.class_name,
-        college: profile.college,
-        teacher: profile.teacher,
-        company: profile.company,
-        company_teacher: profile.company_teacher,
-        start_date: profile.start_date,
-        end_date: profile.end_date,
-        date: entry.date,
-        position: entry.position,
-        content: entry.content,
-        feelings: entry.feelings,
-        other: entry.other,
-      })
+      await downloadWord(data)
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
-      alert('下载失败: ' + msg)
+      console.error('[导出失败]', e)
+      setExportError(msg)
+    }
+  }
+
+  // 批量导出为一个 zip
+  async function handleDownloadAll() {
+    if (!profile || !entries.length) return
+
+    setExportError('')
+    setExporting(true)
+    try {
+      const items = entries.map(entry => {
+        const data = toWordData(entry, profile)
+        return { data, fileName: defaultWordFileName(data) }
+      })
+      await downloadAllWords(items)
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
+      console.error('[批量导出失败]', e)
+      setExportError(msg)
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -81,12 +127,39 @@ export default function HistoryPage() {
   return (
     <div className="max-w-[680px] mx-auto animate-fadeIn">
       {/* 标题 */}
-      <div className="mb-10">
-        <h2 className="text-[22px] font-medium tracking-tight text-base-text">成长档案</h2>
-        <p className="text-[13px] text-base-muted mt-1">
-          {entries.length} 篇记录
-        </p>
+      <div className="mb-10 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-[22px] font-medium tracking-tight text-base-text">成长档案</h2>
+          <p className="text-[13px] text-base-muted mt-1">{entries.length} 篇记录</p>
+        </div>
+        {entries.length > 0 && (
+          <button
+            onClick={handleDownloadAll}
+            disabled={exporting}
+            className="shrink-0 px-3.5 py-1.5 rounded-[10px] border border-base-line text-[12px] text-base-secondary hover:bg-base-surface hover:text-base-text transition-colors duration-150 disabled:opacity-50"
+          >
+            {exporting ? '打包中…' : '导出全部'}
+          </button>
+        )}
       </div>
+
+      {/* 导出失败提示 */}
+      {exportError && (
+        <div className="mb-6 rounded-[14px] border border-red-200 bg-red-50/60 px-5 py-4 animate-fadeIn">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-medium text-red-700 mb-1.5">导出失败</p>
+              <p className="text-[13px] text-red-600 leading-relaxed break-all">{exportError}</p>
+            </div>
+            <button
+              onClick={() => setExportError('')}
+              className="shrink-0 px-3 py-1.5 rounded-[9px] border border-red-200 text-[12px] text-red-600 hover:bg-red-100 transition-colors"
+            >
+              关闭
+            </button>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="text-center py-16 text-base-muted text-sm">正在翻阅…</div>

@@ -31,3 +31,18 @@ Object.defineProperty(globalThis, 'localStorage', {
   writable: true,
   configurable: true,
 })
+
+// happy-dom 未实现 confirm / alert。
+// 注意组件里写的是裸调用 confirm(...)，它绑定在 globalThis 上，
+// 所以这里也必须定义在 globalThis，测试才能替换它。
+Object.defineProperty(globalThis, 'confirm', {
+  value: () => true,
+  writable: true,
+  configurable: true,
+})
+
+Object.defineProperty(globalThis, 'alert', {
+  value: () => {},
+  writable: true,
+  configurable: true,
+})

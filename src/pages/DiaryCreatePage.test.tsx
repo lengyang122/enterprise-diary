@@ -1,12 +1,35 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
 import DiaryCreatePage from './DiaryCreatePage'
+import { downloadWord } from '../lib/word'
+import { EMPTY_PROFILE } from '../lib/storage'
 
-// 隔离 AI 与 Word 依赖：本文件只验证草稿与渲染行为
+// 隔离 AI 依赖；word 只替换下载动作，保留 checkExportData / describeExportCheck 的真实实现
 vi.mock('../lib/ai', () => ({ generateDiaryContent: vi.fn() }))
-vi.mock('../lib/word', () => ({ downloadWord: vi.fn() }))
+vi.mock('../lib/word', async importOriginal => {
+  const actual = await importOriginal<typeof import('../lib/word')>()
+  return { ...actual, downloadWord: vi.fn() }
+})
 
 const draftKey = 'enterprise-diary-draft'
+const profileKey = 'enterprise-diary-profile'
+
+function seedDraft(content: string, withResult = false) {
+  localStorage.setItem(
+    draftKey,
+    JSON.stringify({
+      form: { date: '9月2日', position: 'PE', content, feelings: '', other: '' },
+      aiResult: withResult
+        ? { content: '整理后的实习内容。', feelings: '整理后的体会。', other: '' }
+        : null,
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    })
+  )
+}
+
+function seedProfile() {
+  localStorage.setItem(profileKey, JSON.stringify({ ...EMPTY_PROFILE, name: '张三', company: '某公司' }))
+}
 
 describe('DiaryCreatePage 草稿行为', () => {
   beforeEach(() => localStorage.clear())
@@ -26,14 +49,7 @@ describe('DiaryCreatePage 草稿行为', () => {
   })
 
   it('挂载时恢复未提交的草稿并给出提示', async () => {
-    localStorage.setItem(
-      draftKey,
-      JSON.stringify({
-        form: { date: '8月9日', position: 'PE', content: '上次写到一半', feelings: '', other: '' },
-        aiResult: null,
-        updatedAt: '2026-01-01T00:00:00.000Z',
-      })
-    )
+    seedDraft('上次写到一半')
 
     render(<DiaryCreatePage />)
 
@@ -43,14 +59,7 @@ describe('DiaryCreatePage 草稿行为', () => {
   })
 
   it('恢复的草稿不会在挂载瞬间被空表单覆盖', async () => {
-    localStorage.setItem(
-      draftKey,
-      JSON.stringify({
-        form: { date: '8月9日', position: 'PE', content: '重要内容', feelings: '', other: '' },
-        aiResult: null,
-        updatedAt: '2026-01-01T00:00:00.000Z',
-      })
-    )
+    seedDraft('重要内容')
 
     render(<DiaryCreatePage />)
     await screen.findByText('已恢复上次未完成的草稿')
@@ -78,17 +87,57 @@ describe('DiaryCreatePage 草稿行为', () => {
   })
 
   it('恢复提示可关闭', async () => {
-    localStorage.setItem(
-      draftKey,
-      JSON.stringify({
-        form: { date: '8月9日', position: 'PE', content: '内容', feelings: '', other: '' },
-        aiResult: null,
-        updatedAt: '2026-01-01T00:00:00.000Z',
-      })
-    )
+    seedDraft('内容')
 
     render(<DiaryCreatePage />)
     fireEvent.click(await screen.findByText('知道了'))
     expect(screen.queryByText('已恢复上次未完成的草稿')).toBeNull()
+  })
+})
+
+describe('DiaryCreatePage 导出行为', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.mocked(downloadWord).mockReset()
+    vi.restoreAllMocks()
+  })
+  afterEach(() => cleanup())
+
+  it('模板失配时在页面上显式报错，而不是静默下载错误内容', async () => {
+    seedProfile()
+    seedDraft('今天在产线跟进异常。', true)
+    vi.mocked(downloadWord).mockRejectedValue(
+      new Error('导出失败：内置模板中找不到以下内容的位置 —— 姓名。')
+    )
+    ;(globalThis as unknown as { confirm: unknown }).confirm = vi.fn(() => true)
+
+    render(<DiaryCreatePage />)
+    await screen.findByText('下载 Word')
+
+    await waitFor(() => {
+      fireEvent.click(screen.getByText('下载 Word'))
+      expect(downloadWord).toHaveBeenCalled()
+    })
+
+    expect(await screen.findByText('导出失败')).toBeTruthy()
+    expect(screen.getByText(/找不到以下内容的位置/)).toBeTruthy()
+  })
+
+  it('个人信息缺失时先提示，选择取消则不导出', async () => {
+    // 只填姓名，其余个人信息为空
+    localStorage.setItem(profileKey, JSON.stringify({ ...EMPTY_PROFILE, name: '张三' }))
+    seedDraft('今天在产线跟进异常。', true)
+    const confirmMock = vi.fn(() => false)
+    ;(globalThis as unknown as { confirm: unknown }).confirm = confirmMock
+
+    render(<DiaryCreatePage />)
+    await screen.findByText('下载 Word')
+
+    await waitFor(() => {
+      fireEvent.click(screen.getByText('下载 Word'))
+      expect(confirmMock).toHaveBeenCalled()
+    })
+
+    expect(downloadWord).not.toHaveBeenCalled()
   })
 })
