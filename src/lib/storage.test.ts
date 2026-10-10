@@ -5,8 +5,12 @@ import {
   getDiaries,
   insertDiary,
   deleteDiary,
+  getDraft,
+  saveDraft,
+  clearDraft,
   EMPTY_PROFILE,
 } from './storage'
+import type { DiaryFormInput } from '../types'
 
 describe('profile 存储', () => {
   beforeEach(() => localStorage.clear())
@@ -122,5 +126,62 @@ describe('diary 存储', () => {
     })
     await deleteDiary(e.id)
     expect(await getDiaries()).toEqual([])
+  })
+})
+
+describe('草稿自动保存', () => {
+  beforeEach(() => localStorage.clear())
+
+  const form = (over: Partial<DiaryFormInput> = {}): DiaryFormInput => ({
+    date: '8月1日',
+    position: 'PQE',
+    content: '',
+    feelings: '',
+    other: '',
+    ...over,
+  })
+
+  it('无草稿时返回 null', async () => {
+    expect(await getDraft()).toBeNull()
+  })
+
+  it('保存后可读回草稿与生成结果', async () => {
+    await saveDraft(form({ content: '写了点东西' }), {
+      content: 'A',
+      feelings: 'B',
+      other: 'C',
+    })
+    const d = await getDraft()
+    expect(d?.form.content).toBe('写了点东西')
+    expect(d?.form.position).toBe('PQE')
+    expect(d?.aiResult?.feelings).toBe('B')
+    expect(d?.updatedAt).toBeTruthy()
+  })
+
+  it('三段草稿与生成结果全空时不落库', async () => {
+    await saveDraft(form(), null)
+    expect(localStorage.getItem('enterprise-diary-draft')).toBeNull()
+    expect(await getDraft()).toBeNull()
+  })
+
+  it('内容被清空时会移除已有草稿', async () => {
+    await saveDraft(form({ content: '有内容' }), null)
+    expect(await getDraft()).not.toBeNull()
+    await saveDraft(form(), null)
+    expect(await getDraft()).toBeNull()
+  })
+
+  it('clearDraft 清空草稿', async () => {
+    await saveDraft(form({ content: '有内容' }), null)
+    await clearDraft()
+    expect(await getDraft()).toBeNull()
+  })
+
+  it('损坏的草稿数据不会抛错', async () => {
+    localStorage.setItem('enterprise-diary-draft', '{ 坏掉')
+    expect(await getDraft()).toBeNull()
+
+    localStorage.setItem('enterprise-diary-draft', JSON.stringify({ form: '不是对象' }))
+    expect(await getDraft()).toBeNull()
   })
 })

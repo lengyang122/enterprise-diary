@@ -13,6 +13,8 @@
 | 设置 `/settings` | 个人信息（姓名/学号/班级/学院/专业/指导教师/实习单位/企业指导教师/实习起止）与 AI 接口配置 |
 
 - **Word 导出** — 基于学校原始模板做 XML 级文本替换，保留 100% 原始格式
+- **草稿自动保存** — 正在写的内容实时存入本地，刷新或意外关闭后可恢复
+- **数据备份** — 设置页一键导出 / 导入 JSON 备份，支持合并或覆盖
 - **移动端适配** — 桌面侧边栏，移动端底部导航
 - **岗位记忆** — 记住上次使用的实习岗位，默认 `PQE`
 
@@ -40,6 +42,20 @@ npm run test:watch # 测试监听模式
 npm run preview    # 预览构建产物
 ```
 
+## 测试
+
+```bash
+npm test
+```
+
+| 文件 | 覆盖范围 |
+|---|---|
+| `text.test.ts` | 汉字计数、句子级截断、AI 输出多格式分栏解析 |
+| `storage.test.ts` | 个人信息字段防御、日记增删、旧四字段数据迁移、草稿读写 |
+| `backup.test.ts` | 备份生成、非法/异版本备份拒绝、合并与覆盖导入 |
+| `word.test.ts` | 模板 XML 替换（含跨 `<w:r>` 拆分场景）、文本截断 |
+| `DiaryCreatePage.test.tsx` | 组件级草稿恢复与自动保存 |
+
 ## 目录结构
 
 ```
@@ -47,8 +63,10 @@ src/
 ├── components/layout/    # Layout / Sidebar / MobileNav
 ├── lib/
 │   ├── ai.ts             # AI 调用：Prompt 构建、API 调用、生成主流程与降级策略
-│   ├── text.ts           # 纯文本处理：汉字计数、句子截断、分栏解析（可单测）
-│   ├── storage.ts        # localStorage 数据层（含旧版本数据迁移）
+│   ├── aiConfig.ts       # AI 接口配置读写
+│   ├── text.ts           # 纯文本处理：汉字计数、句子截断、分栏解析（纯函数，可单测）
+│   ├── storage.ts        # localStorage 数据层：个人信息、日记、草稿（含旧数据迁移）
+│   ├── backup.ts         # 备份导出 / 校验 / 恢复
 │   ├── word.ts           # Word 模板填充
 │   └── templateData.ts   # 学校模板 .docx（base64 内嵌，无需网络请求）
 ├── pages/                # DiaryCreatePage / HistoryPage / SettingsPage
@@ -60,7 +78,8 @@ src/
 
 - 所有日记与个人信息**只存在本机浏览器 localStorage**，不上传任何服务器。
 - AI 请求由浏览器直接发往你在设置页填写的 API 地址，API Key 同样只存本地。
-- ⚠️ **清除浏览器数据会删除全部日记。** 备份/导入能力见「路线图」。
+- ⚠️ **清除浏览器数据会删除全部日记。** 请在「设置 → 数据备份」定期导出 JSON 备份。
+- 草稿会实时自动保存，刷新或意外关闭页面后重新进入即可恢复。
 
 localStorage 键名：
 
@@ -70,6 +89,7 @@ localStorage 键名：
 | `enterprise-diary-entries` | 日记列表 |
 | `enterprise-diary-ai-config` | AI 接口配置（含 API Key） |
 | `enterprise-diary-last-position` | 上次使用的实习岗位 |
+| `enterprise-diary-draft` | 未提交的草稿（含 AI 生成结果） |
 
 ## AI 生成流程
 
@@ -95,7 +115,7 @@ localStorage 键名：
 ## 路线图
 
 - [x] **V0 工程质量底座** — git 基线、类型与存储结构对齐、清理无效依赖与凭据残留、Vitest 测试
-- [ ] **V1 数据安全** — 草稿自动保存与恢复、一键备份 / 导入 JSON
+- [x] **V1 数据安全** — 草稿自动保存与恢复、一键备份 / 导入 JSON
 - [ ] **V2 Word 导出可靠性** — 占位符定位取代硬编码文本、导出前校验、显式报错、批量导出
 - [ ] **V3 生成质量** — 字数达标校验与自动补写、单栏重生成、岗位库、Prompt 可配置
 - [ ] **V4 全站 UI 美化**

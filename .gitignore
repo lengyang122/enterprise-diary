@@ -9,3 +9,7 @@ dist
 *.local
 
 .vercel
+
+# 工具链临时产物（编辑器/写入器中断时可能残留）
+*.tmp
+.*.tmpdir

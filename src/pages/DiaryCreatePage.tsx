@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { generateDiaryContent } from '../lib/ai'
 import { downloadWord } from '../lib/word'
-import { getProfile, insertDiary } from '../lib/storage'
+import { getProfile, insertDiary, getDraft, saveDraft, clearDraft } from '../lib/storage'
 import type { Profile, DiaryFormInput, AIGeneratedResult } from '../types'
 
 // 岗位持久化：记住上次设置的岗位（帮同学写日记时不用反复改）
@@ -29,6 +29,9 @@ export default function DiaryCreatePage() {
   const [aiResult, setAiResult] = useState<AIGeneratedResult | null>(null)
   const [genError, setGenError] = useState('')
   const [copied, setCopied] = useState(false)
+  // 草稿：restored 用于提示，ready 表示恢复流程已结束（此前不写库，避免覆盖已有草稿）
+  const [restored, setRestored] = useState(false)
+  const [ready, setReady] = useState(false)
   const [form, setForm] = useState<DiaryFormInput>({
     date: formatDate(new Date()),
     position: loadPosition(),
@@ -37,9 +40,10 @@ export default function DiaryCreatePage() {
     other: '',
   })
 
-  // 加载个人信息
+  // 加载个人信息，并恢复未提交的草稿
   useEffect(() => {
     loadProfile()
+    restoreDraft()
   }, [])
 
   async function loadProfile() {
@@ -50,6 +54,30 @@ export default function DiaryCreatePage() {
       // 忽略
     }
   }
+
+  async function restoreDraft() {
+    try {
+      const draft = await getDraft()
+      if (draft) {
+        setForm(draft.form)
+        setAiResult(draft.aiResult)
+        setRestored(true)
+      }
+    } catch {
+      // 忽略
+    } finally {
+      setReady(true)
+    }
+  }
+
+  // 草稿自动保存（防抖 600ms）
+  useEffect(() => {
+    if (!ready) return
+    const timer = setTimeout(() => {
+      saveDraft(form, aiResult)
+    }, 600)
+    return () => clearTimeout(timer)
+  }, [ready, form, aiResult])
 
   function formatDate(d: Date): string {
     const month = d.getMonth() + 1
@@ -110,6 +138,8 @@ export default function DiaryCreatePage() {
         feelings: aiResult.feelings,
         other: aiResult.other,
       })
+      await clearDraft()
+      setRestored(false)
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (err: unknown) {
@@ -158,6 +188,8 @@ export default function DiaryCreatePage() {
     setAiResult(null)
     setSaved(false)
     setGenError('')
+    setRestored(false)
+    void clearDraft()
   }
 
   // === 生成中状态 ===
@@ -186,6 +218,7 @@ export default function DiaryCreatePage() {
   if (aiResult) {
     return (
       <div className="space-y-8 animate-fadeIn">
+        {restored && <RestoreNotice onDismiss={() => setRestored(false)} />}
         {/* 顶部元信息 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-base-secondary">
@@ -268,6 +301,7 @@ export default function DiaryCreatePage() {
   // === 输入状态 ===
   return (
     <div className="max-w-[680px] mx-auto space-y-12 animate-fadeIn">
+      {restored && <RestoreNotice onDismiss={() => setRestored(false)} />}
       {/* 顶部标题 — 克制 */}
       <div className="text-center">
         <h2 className="text-[26px] font-medium tracking-tight text-base-text">今天</h2>
@@ -465,5 +499,20 @@ function EditableChip({
         <path d="M11.5 2.5l2 2L5 13H3v-2l8.5-8.5z" />
       </svg>
     </button>
+  )
+}
+
+// 草稿恢复提示 — 安静的一行，可关闭
+function RestoreNotice({ onDismiss }: { onDismiss: () => void }) {
+  return (
+    <div className="rounded-[12px] border border-base-accent/20 bg-base-accent-soft px-4 py-3 flex items-center justify-between gap-4">
+      <p className="text-[12px] text-base-secondary">已恢复上次未完成的草稿</p>
+      <button
+        onClick={onDismiss}
+        className="shrink-0 text-[12px] text-base-muted hover:text-base-text transition-colors duration-150"
+      >
+        知道了
+      </button>
+    </div>
   )
 }

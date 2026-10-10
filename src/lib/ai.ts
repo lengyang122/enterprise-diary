@@ -1,43 +1,6 @@
 import type { DiaryFormInput, AIGeneratedResult } from '../types'
 import { countHanzi, truncateToSentence, parseSections, sectionScore, stripMarkers } from './text'
-
-// AI API 配置（用户可在页面设置中修改）
-const AI_CONFIG_KEY = 'enterprise-diary-ai-config'
-
-export interface AIConfig {
-  apiKey: string
-  apiUrl: string
-  model: string
-}
-
-export function getAIConfig(): AIConfig {
-  try {
-    const stored = localStorage.getItem(AI_CONFIG_KEY)
-    if (!stored) {
-      return {
-        apiKey: '',
-        apiUrl: 'https://api.deepseek.com/v1/chat/completions',
-        model: 'deepseek-v4-flash',
-      }
-    }
-    const data = JSON.parse(stored)
-    return {
-      apiKey: data.apiKey || '',
-      apiUrl: data.apiUrl || 'https://api.deepseek.com/v1/chat/completions',
-      model: data.model || 'deepseek-v4-flash',
-    }
-  } catch {
-    return {
-      apiKey: '',
-      apiUrl: 'https://api.deepseek.com/v1/chat/completions',
-      model: 'deepseek-v4-flash',
-    }
-  }
-}
-
-export function saveAIConfig(config: AIConfig) {
-  localStorage.setItem(AI_CONFIG_KEY, JSON.stringify(config))
-}
+import { getAIConfig, type AIConfig } from './aiConfig'
 
 // ============================================================
 // Prompt 构建（System 放规则，User 放内容）

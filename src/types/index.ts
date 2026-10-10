@@ -46,6 +46,13 @@ export interface AIGeneratedResult {
   other: string
 }
 
+// === 未提交的编辑草稿（自动保存，防止刷新/崩溃丢失） ===
+export interface DraftState {
+  form: DiaryFormInput
+  aiResult: AIGeneratedResult | null
+  updatedAt: string
+}
+
 // === 用于 Word 生成的数据 ===
 export interface DiaryWordData {
   // 固定信息

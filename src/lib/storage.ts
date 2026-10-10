@@ -5,7 +5,13 @@
 //   Diary  ：自动识别四字段时代的旧数据并转换为新三字段结构
 // ============================================================
 
-import type { Profile, DiaryEntry } from '../types'
+import type {
+  Profile,
+  DiaryEntry,
+  DiaryFormInput,
+  AIGeneratedResult,
+  DraftState,
+} from '../types'
 
 // === Profile ===
 
@@ -123,4 +129,99 @@ export async function deleteDiary(id: string): Promise<void> {
   const diaries = await getDiaries()
   const filtered = diaries.filter(d => d.id !== id)
   localStorage.setItem(DIARIES_KEY, JSON.stringify(filtered))
+}
+
+// === 批量写入（供备份恢复使用） ===
+
+// 覆盖式写入
+export async function replaceDiaries(list: DiaryEntry[]): Promise<void> {
+  localStorage.setItem(DIARIES_KEY, JSON.stringify(list))
+}
+
+// 合并式写入：按 id 去重，已存在的跳过；结果按 created_at 倒序
+export async function mergeDiaries(
+  list: DiaryEntry[]
+): Promise<{ added: number; skipped: number }> {
+  const existing = await getDiaries()
+  const seen = new Set(existing.map(d => d.id))
+  let added = 0
+  let skipped = 0
+
+  for (const item of list) {
+    if (seen.has(item.id)) {
+      skipped++
+      continue
+    }
+    seen.add(item.id)
+    existing.push(item)
+    added++
+  }
+
+  existing.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+  localStorage.setItem(DIARIES_KEY, JSON.stringify(existing))
+  return { added, skipped }
+}
+
+// === 草稿（自动保存，防刷新/崩溃丢失） ===
+
+const DRAFT_KEY = 'enterprise-diary-draft'
+
+export async function getDraft(): Promise<DraftState | null> {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY)
+    if (!raw) return null
+    const data = JSON.parse(raw)
+    if (!data || typeof data !== 'object') return null
+
+    const f = (data as Record<string, unknown>).form
+    if (!f || typeof f !== 'object') return null
+    const form = f as Record<string, unknown>
+
+    const rawResult = (data as Record<string, unknown>).aiResult
+    let aiResult: AIGeneratedResult | null = null
+    if (rawResult && typeof rawResult === 'object') {
+      const r = rawResult as Record<string, unknown>
+      aiResult = {
+        content: typeof r.content === 'string' ? r.content : '',
+        feelings: typeof r.feelings === 'string' ? r.feelings : '',
+        other: typeof r.other === 'string' ? r.other : '',
+      }
+    }
+
+    return {
+      form: {
+        date: typeof form.date === 'string' ? form.date : '',
+        position: typeof form.position === 'string' ? form.position : '',
+        content: typeof form.content === 'string' ? form.content : '',
+        feelings: typeof form.feelings === 'string' ? form.feelings : '',
+        other: typeof form.other === 'string' ? form.other : '',
+      },
+      aiResult,
+      updatedAt:
+        typeof (data as Record<string, unknown>).updatedAt === 'string'
+          ? ((data as Record<string, unknown>).updatedAt as string)
+          : '',
+    }
+  } catch {
+    return null
+  }
+}
+
+// 三段草稿与生成结果都为空时，直接清掉草稿，避免下次恢复出一个空表单
+export async function saveDraft(
+  form: DiaryFormInput,
+  aiResult: AIGeneratedResult | null
+): Promise<void> {
+  const isEmpty =
+    !form.content.trim() && !form.feelings.trim() && !form.other.trim() && !aiResult
+  if (isEmpty) {
+    localStorage.removeItem(DRAFT_KEY)
+    return
+  }
+  const draft: DraftState = { form, aiResult, updatedAt: new Date().toISOString() }
+  localStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+}
+
+export async function clearDraft(): Promise<void> {
+  localStorage.removeItem(DRAFT_KEY)
 }
