@@ -9,21 +9,21 @@ const items = [
 
 export default function MobileNav() {
   return (
-    <nav className="bg-base-surface/95 backdrop-blur-md border-t border-base-line flex justify-around pt-2 pb-2.5">
+    <nav className="glass rounded-glass-lg flex justify-around px-1.5 py-2">
       {items.map(({ path, label, Icon }) => (
         <NavLink
           key={path}
           to={path}
           className={({ isActive }) =>
-            `flex flex-col items-center gap-1 px-5 py-1 rounded-[10px] transition-colors duration-200 ${
-              isActive ? 'text-base-accent' : 'text-base-muted'
+            `flex flex-col items-center gap-1 px-4 py-1.5 rounded-glass-sm transition-all duration-400 ease-spring ${
+              isActive ? 'text-accent bg-white/60' : 'text-ink-tertiary'
             }`
           }
         >
           {({ isActive }) => (
             <>
               <Icon size={19} />
-              <span className={`text-[11px] ${isActive ? 'font-medium' : ''}`}>{label}</span>
+              <span className={`text-[11px] ${isActive ? 'font-semibold' : ''}`}>{label}</span>
             </>
           )}
         </NavLink>

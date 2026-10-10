@@ -1,35 +1,43 @@
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import MobileNav from './MobileNav'
+import GlassBackground from '../GlassBackground'
 import { DocIcon } from '../icons'
 
 export default function Layout() {
   return (
-    <div className="min-h-screen bg-base-bg text-base-text">
-      {/* 桌面端侧边栏 */}
-      <div className="hidden md:block">
+    <div className="relative min-h-screen">
+      <GlassBackground />
+
+      {/* 桌面端侧边栏 —— 悬浮玻璃面板 */}
+      <div className="hidden md:block fixed left-3 top-3 bottom-3 z-30 w-[236px]">
         <Sidebar />
       </div>
 
-      {/* 移动端顶栏 */}
-      <header className="md:hidden sticky top-0 z-30 bg-base-bg/85 backdrop-blur-md border-b border-base-line">
-        <div className="px-5 h-14 flex items-center gap-2.5">
-          <span className="w-7 h-7 rounded-[9px] bg-base-accent text-white grid place-items-center shadow-accent">
+      {/* 移动端吸顶栏 */}
+      <header className="md:hidden fixed top-0 inset-x-0 z-30 px-3 pt-3">
+        <div className="glass rounded-glass-lg flex items-center gap-2.5 px-4 h-[52px]">
+          <span
+            className="w-7 h-7 rounded-[9px] text-white grid place-items-center shrink-0"
+            style={{
+              background: 'linear-gradient(160deg,#4EA8FF,#0A84FF)',
+              boxShadow: '0 5px 14px -6px rgba(10,132,255,.8), inset 0 1px 0 rgba(255,255,255,.6)',
+            }}
+          >
             <DocIcon size={15} />
           </span>
-          <span className="text-[14px] font-semibold tracking-tight">企业实践日记</span>
+          <span className="text-[14.5px] font-semibold tracking-tight">企业实践日记</span>
         </div>
       </header>
 
-      {/* 主内容 — 视觉居中 */}
-      <main className="md:ml-60 min-h-screen flex flex-col">
-        <div className="flex-1 w-full max-w-[860px] mx-auto px-5 md:px-10 py-8 md:py-14 pb-32 md:pb-16">
+      <main className="relative z-10 md:pl-[260px]">
+        <div className="mx-auto w-full max-w-[880px] px-3 md:px-6 pt-[76px] md:pt-3 pb-32 md:pb-6">
           <Outlet />
         </div>
       </main>
 
       {/* 移动端底部导航 */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40">
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-30 px-3 pb-3">
         <MobileNav />
       </div>
     </div>

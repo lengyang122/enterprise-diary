@@ -7,6 +7,7 @@ export default {
         sans: [
           '-apple-system',
           'BlinkMacSystemFont',
+          '"SF Pro Text"',
           '"PingFang SC"',
           '"Microsoft YaHei"',
           '"Segoe UI"',
@@ -15,57 +16,74 @@ export default {
         ],
       },
       colors: {
-        base: {
-          // 底色略微压深，让白色卡片真正浮起来
-          bg: '#F4F4F1',
-          surface: '#FFFFFF',
-          sunken: '#EFEFEC',
-          text: '#191A1E',
-          // 正文层级拉开对比
-          secondary: '#63636D',
-          muted: '#9B9BA4',
-          line: '#E7E7E3',
-          'line-strong': '#D9D9D4',
-          accent: '#5B5FD6',
-          'accent-hover': '#4C50C6',
-          'accent-soft': 'rgba(91, 95, 214, 0.09)',
-          'accent-ring': 'rgba(91, 95, 214, 0.22)',
-          amber: '#B5761A',
-          'amber-soft': 'rgba(181, 118, 26, 0.10)',
-          success: '#1B7A4B',
-          'success-soft': 'rgba(27, 122, 75, 0.10)',
+        // iOS 系统语义色
+        ink: {
+          DEFAULT: '#1C1C1E',
+          secondary: 'rgba(60, 60, 67, 0.62)',
+          tertiary: 'rgba(60, 60, 67, 0.34)',
         },
+        hairline: 'rgba(60, 60, 67, 0.12)',
+        accent: {
+          DEFAULT: '#0A84FF',
+          hover: '#0A78E8',
+          soft: 'rgba(10, 132, 255, 0.12)',
+          ring: 'rgba(10, 132, 255, 0.22)',
+        },
+        warn: { DEFAULT: '#B26B00', soft: 'rgba(178, 107, 0, 0.13)' },
+        ok: { DEFAULT: '#1B7A4B', soft: 'rgba(27, 122, 75, 0.13)' },
+        danger: { DEFAULT: '#D70015', soft: 'rgba(215, 0, 21, 0.09)' },
       },
       borderRadius: {
-        input: '12px',
-        button: '11px',
-        card: '16px',
+        'glass-lg': '26px',
+        glass: '20px',
+        'glass-sm': '14px',
       },
       boxShadow: {
-        soft: '0 1px 2px rgba(18, 18, 28, 0.04)',
-        // 卡片：极淡的贴地阴影 + 大范围柔光，制造层次
-        card: '0 1px 2px rgba(18, 18, 28, 0.04), 0 10px 28px -18px rgba(18, 18, 28, 0.22)',
-        lift: '0 2px 6px rgba(18, 18, 28, 0.06), 0 18px 44px -20px rgba(18, 18, 28, 0.28)',
-        accent: '0 6px 18px -8px rgba(91, 95, 214, 0.55)',
+        // 玻璃的「厚度」来自内侧上下高光，不是外阴影
+        glass:
+          'inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.28), 0 10px 40px -14px rgba(28,38,64,0.24)',
+        'glass-lift':
+          'inset 0 1px 0 rgba(255,255,255,0.95), 0 18px 46px -18px rgba(28,38,64,0.3)',
+        'glass-ring':
+          'inset 0 1px 0 rgba(255,255,255,0.95), 0 0 0 3.5px rgba(10,132,255,0.22), 0 18px 46px -18px rgba(28,38,64,0.3)',
+        'glass-sm':
+          'inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 10px -4px rgba(28,38,64,0.2)',
+        accent:
+          '0 10px 26px -10px rgba(10,132,255,0.9), inset 0 1px 0 rgba(255,255,255,0.45)',
+      },
+      transitionTimingFunction: {
+        spring: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+        ios: 'cubic-bezier(0.32, 0.72, 0, 1)',
       },
       keyframes: {
+        riseIn: {
+          '0%': { opacity: '0', transform: 'translateY(14px) scale(0.985)' },
+          '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
         fadeIn: {
-          '0%': { opacity: '0', transform: 'translateY(6px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        popIn: {
+          '0%': { opacity: '0', transform: 'translateY(18px) scale(0.97)' },
+          '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
         },
         softPulse: {
-          '0%, 100%': { opacity: '0.3' },
+          '0%, 100%': { opacity: '0.28' },
           '50%': { opacity: '1' },
         },
-        riseIn: {
-          '0%': { opacity: '0', transform: 'translateY(14px) scale(0.99)' },
-          '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+        // 背景光斑超慢漂移 —— 让界面像在呼吸
+        drift: {
+          '0%': { transform: 'translate3d(0,0,0) scale(1)' },
+          '100%': { transform: 'translate3d(60px,44px,0) scale(1.12)' },
         },
       },
       animation: {
-        fadeIn: 'fadeIn 0.32s cubic-bezier(0.22, 1, 0.36, 1)',
-        riseIn: 'riseIn 0.42s cubic-bezier(0.22, 1, 0.36, 1)',
+        riseIn: 'riseIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both',
+        fadeIn: 'fadeIn 0.3s cubic-bezier(0.32,0.72,0,1) both',
+        popIn: 'popIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both',
         softPulse: 'softPulse 1.5s ease-in-out infinite',
+        drift: 'drift 26s cubic-bezier(0.32,0.72,0,1) infinite alternate',
       },
     },
   },

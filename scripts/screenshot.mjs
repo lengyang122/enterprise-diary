@@ -105,7 +105,9 @@ const SEED_DRAFT_RESULT = `localStorage.setItem('enterprise-diary-draft', ${JSON
 )})`
 
 const DESKTOP = { width: 1280, height: 900 }
+const DESKTOP_TALL = { width: 1280, height: 1500 }
 const MOBILE = { width: 390, height: 844 }
+const MOBILE_TALL = { width: 390, height: 1400 }
 
 const SCENARIOS = [
   { name: '01-today-empty', route: '/', seed: [SEED_PROFILE, SEED_AI_CONFIG] },
@@ -135,15 +137,26 @@ const SCENARIOS = [
     route: '/',
     seed: [SEED_PROFILE, SEED_AI_CONFIG, SEED_DRAFT_INPUT],
     viewport: MOBILE,
-    fullPage: false,
     action: async page => {
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
       await page.waitForTimeout(400)
     },
   },
   { name: '08-mobile-history', route: '/history', seed: [SEED_PROFILE, SEED_DIARIES], viewport: MOBILE },
-  { name: '09-mobile-settings', route: '/settings', seed: [SEED_PROFILE, SEED_AI_CONFIG, SEED_DIARIES], viewport: MOBILE },
+  {
+    name: '09-mobile-settings',
+    route: '/settings',
+    seed: [SEED_PROFILE, SEED_AI_CONFIG, SEED_DIARIES],
+    viewport: MOBILE_TALL,
+  },
 ]
+
+// 背景是固定层（position: fixed），fullPage 截图对固定元素不可信，
+// 因此统一用视口截图 —— 这也更接近使用者的真实观感。
+const VIEWPORT = {
+  '06-settings': DESKTOP_TALL,
+  '09-mobile-settings': MOBILE_TALL,
+}
 
 function startStaticServer() {
   return http.createServer(async (req, res) => {
@@ -186,7 +199,7 @@ async function main() {
 
   for (const scenario of targets) {
     const context = await browser.newContext({
-      viewport: scenario.viewport ?? DESKTOP,
+      viewport: scenario.viewport ?? VIEWPORT[scenario.name] ?? DESKTOP,
       deviceScaleFactor: 2,
     })
     for (const seed of scenario.seed ?? []) {
@@ -205,7 +218,7 @@ async function main() {
     if (scenario.action) await scenario.action(page)
 
     const file = path.join(OUT, `${scenario.name}.png`)
-    await page.screenshot({ path: file, fullPage: scenario.fullPage !== false })
+    await page.screenshot({ path: file })
     console.log(`shotted ${scenario.name}${errors.length ? '  [页面错误] ' + errors.join(' | ') : ''}`)
 
     await context.close()

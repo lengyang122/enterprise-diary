@@ -16,20 +16,17 @@ function parseDate(dateStr: string | undefined | null): { month: string; day: st
   const s = (dateStr || '').trim()
   const m = s.match(/(\d+)月(\d+)日/)
   if (m) return { month: `${m[1]}月`, day: m[2] }
-  // 兼容旧格式 "7.17"
   const old = s.match(/^(\d+)\.(\d+)$/)
   if (old) return { month: `${old[1]}月`, day: old[2] }
   return { month: '', day: s }
 }
 
-// 记录写入年份（跨年时用于区分）
 function yearOf(createdAt: string | undefined | null): string {
   if (!createdAt) return ''
   const d = new Date(createdAt)
   return Number.isNaN(d.getTime()) ? '' : `${d.getFullYear()}年`
 }
 
-// 星期几 —— 日记场景下有实际参考价值
 function weekdayOf(createdAt: string | undefined | null): string {
   if (!createdAt) return ''
   const d = new Date(createdAt)
@@ -86,7 +83,6 @@ export default function HistoryPage() {
     if (selectedEntry?.id === id) setSelectedEntry(null)
   }
 
-  // 组装 Word 导出数据
   function toWordData(entry: DiaryEntry, prof: Profile): DiaryWordData {
     return {
       name: prof.name,
@@ -106,7 +102,6 @@ export default function HistoryPage() {
     }
   }
 
-  // 导出前体检：信息缺失时先提示（Word 中对应位置会留空）
   function confirmIfIncomplete(data: DiaryWordData): boolean {
     const warning = describeExportCheck(checkExportData(data))
     if (!warning) return true
@@ -128,7 +123,6 @@ export default function HistoryPage() {
     }
   }
 
-  // 批量导出为一个 zip
   async function handleDownloadAll() {
     if (!profile || !entries.length) return
 
@@ -149,26 +143,21 @@ export default function HistoryPage() {
     }
   }
 
-  // 摘要：取内容前 60 字（防御 undefined）
   function summary(text: string | undefined | null): string {
     const safe = (text || '').replace(/\s+/g, ' ').trim()
     return safe.length > 60 ? safe.slice(0, 60) + '…' : safe
   }
 
   return (
-    <div className="max-w-[720px] mx-auto animate-riseIn">
-      {/* 标题 */}
-      <div className="mb-8 flex items-end justify-between gap-4">
-        <div>
-          <h2 className="text-[24px] font-semibold tracking-tight text-base-text">成长档案</h2>
-          <p className="text-[13px] text-base-muted mt-1.5">{entries.length} 篇记录</p>
+    <div className="animate-riseIn">
+      {/* 顶栏 */}
+      <div className="glass rounded-glass-lg flex items-center justify-between gap-4 px-5 py-3.5 mb-3.5">
+        <div className="flex items-baseline gap-3">
+          <h2 className="text-[19px] font-bold text-ink tracking-tight">成长档案</h2>
+          <span className="text-[12.5px] text-ink-tertiary">{entries.length} 篇记录</span>
         </div>
         {entries.length > 0 && (
-          <button
-            onClick={handleDownloadAll}
-            disabled={exporting}
-            className="btn-ghost px-3.5 py-2 text-[12px]"
-          >
+          <button onClick={handleDownloadAll} disabled={exporting} className="btn-glass px-4 py-2 text-[12.5px]">
             <DownloadIcon size={14} />
             {exporting ? '打包中…' : '导出全部'}
           </button>
@@ -177,16 +166,13 @@ export default function HistoryPage() {
 
       {/* 导出失败提示 */}
       {exportError && (
-        <div className="mb-5 rounded-card border border-red-200 bg-red-50/70 px-5 py-4 animate-fadeIn">
+        <div className="rounded-glass border border-danger/25 bg-danger-soft px-5 py-4 mb-3.5 animate-popIn">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-semibold text-red-700 mb-1.5">导出失败</p>
-              <p className="text-[12.5px] text-red-600 leading-relaxed break-all">{exportError}</p>
+              <p className="text-[13px] font-semibold text-danger mb-1.5">导出失败</p>
+              <p className="text-[12.5px] text-danger/90 leading-relaxed break-all">{exportError}</p>
             </div>
-            <button
-              onClick={() => setExportError('')}
-              className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-[9px] border border-red-200 text-[11.5px] text-red-600 hover:bg-red-100 transition-colors duration-200"
-            >
+            <button onClick={() => setExportError('')} className="btn-glass shrink-0 px-3.5 py-1.5 text-[12px]">
               <CloseIcon size={12} />
               关闭
             </button>
@@ -195,25 +181,30 @@ export default function HistoryPage() {
       )}
 
       {loading ? (
-        <div className="text-center py-20 text-base-muted text-[13px]">正在翻阅…</div>
+        <div className="text-center py-24 text-ink-tertiary text-[13px]">正在翻阅…</div>
       ) : entries.length === 0 ? (
-        <div className="card px-8 py-16 text-center">
-          <span className="mx-auto w-12 h-12 rounded-[14px] bg-base-accent-soft text-base-accent grid place-items-center mb-5">
-            <WriteIcon size={22} />
+        <div className="glass rounded-glass-lg px-8 py-16 text-center">
+          <span
+            className="mx-auto w-14 h-14 rounded-[18px] text-white grid place-items-center mb-5"
+            style={{
+              background: 'linear-gradient(160deg,#4EA8FF,#0A84FF)',
+              boxShadow: '0 10px 26px -10px rgba(10,132,255,.85), inset 0 1px 0 rgba(255,255,255,.5)',
+            }}
+          >
+            <WriteIcon size={24} />
           </span>
-          <p className="text-[15px] font-medium text-base-text">还没有记录</p>
-          <p className="text-[13px] text-base-muted mt-2">从「今天」开始，写下第一篇日记</p>
-          <Link to="/" className="btn-primary px-5 py-2.5 text-[13px] mt-7 inline-flex">
+          <p className="text-[15.5px] font-semibold text-ink">还没有记录</p>
+          <p className="text-[13px] text-ink-tertiary mt-2">从「今天」开始，写下第一篇日记</p>
+          <Link to="/" className="btn-primary mt-7">
             去写今天
           </Link>
         </div>
       ) : (
-        <div className="space-y-2.5">
+        <div className="grid gap-2.5">
           {entries.map(entry => {
             const { month, day } = parseDate(entry.date)
             const year = yearOf(entry.created_at)
             const weekday = weekdayOf(entry.created_at)
-            // 只有跨年记录才补年份，避免与左侧日期块重复
             const showYear = year !== '' && year !== `${new Date().getFullYear()}年`
             const active = selectedEntry?.id === entry.id
 
@@ -221,35 +212,30 @@ export default function HistoryPage() {
               <button
                 key={entry.id}
                 onClick={() => setSelectedEntry(entry)}
-                className={`group w-full card px-5 py-4 text-left transition-all duration-200 hover:shadow-lift hover:border-base-line-strong hover:-translate-y-[1px] ${
-                  active ? 'border-base-accent/40 shadow-lift' : ''
+                className={`glass rounded-glass px-5 py-4 text-left w-full glass-hover ${
+                  active ? 'bg-white/70 shadow-glass-ring' : ''
                 }`}
               >
                 <div className="flex items-start gap-5">
-                  {/* 日期 */}
                   <div className="flex flex-col items-center w-12 shrink-0">
-                    <span className="text-[24px] font-semibold leading-none tracking-tight text-base-text tabular-nums">
+                    <span className="text-[24px] font-bold leading-none tracking-tight text-ink tabular-nums">
                       {day}
                     </span>
-                    <span className="text-[11px] mt-1.5 text-base-muted">{month}</span>
+                    <span className="text-[11px] mt-1.5 text-ink-tertiary">{month}</span>
                   </div>
 
-                  {/* 分隔线 */}
-                  <div className="w-px self-stretch bg-base-line" />
+                  <div className="w-px self-stretch bg-hairline" />
 
-                  {/* 内容摘要 */}
                   <div className="flex-1 min-w-0 pt-0.5">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="chip bg-base-accent-soft text-base-accent">
-                        {entry.position}
-                      </span>
-                      <span className="text-[11px] text-base-muted">
+                      <span className="chip bg-accent-soft text-accent">{entry.position}</span>
+                      <span className="text-[11.5px] text-ink-tertiary">
                         {weekday}
                         {weekday && showYear ? ' · ' : ''}
                         {showYear ? year : ''}
                       </span>
                     </div>
-                    <p className="text-[13px] text-base-secondary line-clamp-2 leading-relaxed">
+                    <p className="text-[13.5px] text-ink-secondary line-clamp-2 leading-relaxed">
                       {summary(entry.content || entry.feelings || '（无摘要）')}
                     </p>
                   </div>
@@ -260,52 +246,47 @@ export default function HistoryPage() {
         </div>
       )}
 
-      {/* 详情 — 阅读状态 */}
+      {/* 详情弹窗 */}
       {selectedEntry && (
         <div
-          className="fixed inset-0 z-50 bg-base-text/25 backdrop-blur-[3px] flex items-start justify-center overflow-y-auto px-4 py-10 md:py-16 animate-fadeIn"
+          className="fixed inset-0 z-50 bg-ink/20 backdrop-blur-[6px] flex items-start justify-center overflow-y-auto px-4 py-10 md:py-16 animate-fadeIn"
           onClick={() => setSelectedEntry(null)}
         >
           <div
-            className="bg-base-surface w-full max-w-[660px] rounded-card border border-base-line shadow-lift p-6 md:p-9"
+            className="glass rounded-glass-lg w-full max-w-[660px] p-6 md:p-9 animate-popIn"
+            style={{ background: 'rgba(255,255,255,0.72)' }}
             onClick={e => e.stopPropagation()}
           >
-            {/* 头部 */}
             <div className="flex items-start justify-between gap-4 mb-7">
               <div>
                 <div className="flex items-center gap-2.5">
-                  <span className="text-[20px] font-semibold text-base-text tracking-tight">
+                  <span className="text-[21px] font-bold text-ink tracking-tight">
                     {selectedEntry.date}
                   </span>
-                  <span className="chip bg-base-accent-soft text-base-accent">
-                    {selectedEntry.position}
-                  </span>
+                  <span className="chip bg-accent-soft text-accent">{selectedEntry.position}</span>
                 </div>
-                <div className="text-[12px] text-base-muted mt-2">
+                <div className="text-[12.5px] text-ink-tertiary mt-2">
                   {[yearOf(selectedEntry.created_at), weekdayOf(selectedEntry.created_at)]
                     .filter(Boolean)
                     .join(' · ')}
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleDownload(selectedEntry)}
-                  className="btn-ghost px-3.5 py-2 text-[12px]"
-                >
+                <button onClick={() => handleDownload(selectedEntry)} className="btn-glass px-4 py-2 text-[12.5px]">
                   <DownloadIcon size={14} />
                   下载 Word
                 </button>
                 <button
                   onClick={() => handleDelete(selectedEntry.id)}
                   disabled={deleting === selectedEntry.id}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-button text-[12px] text-base-muted hover:text-red-500 hover:bg-red-50 transition-colors duration-200 disabled:opacity-50"
+                  className="btn-quiet text-danger hover:bg-danger-soft disabled:opacity-50"
                 >
                   <TrashIcon size={14} />
                   删除
                 </button>
                 <button
                   onClick={() => setSelectedEntry(null)}
-                  className="p-2 rounded-button text-base-muted hover:text-base-text hover:bg-base-bg transition-colors duration-200"
+                  className="btn-quiet p-2"
                   title="关闭（Esc）"
                 >
                   <CloseIcon size={16} />
@@ -313,32 +294,27 @@ export default function HistoryPage() {
               </div>
             </div>
 
-            {/* 正文 */}
             <div className="space-y-6">
               <section>
-                <h4 className="text-[12px] font-semibold text-base-muted mb-2.5 tracking-wide">
-                  今天
-                </h4>
-                <p className="text-[14px] leading-[1.95] text-base-text whitespace-pre-wrap">
+                <h4 className="text-[12px] font-semibold text-ink-tertiary mb-2.5 tracking-wide">今天</h4>
+                <p className="text-[14.5px] leading-[1.95] text-ink whitespace-pre-wrap">
                   {selectedEntry.content}
                 </p>
               </section>
               {selectedEntry.feelings && (
-                <section className="pt-6 border-t border-base-line">
-                  <h4 className="text-[12px] font-semibold text-base-muted mb-2.5 tracking-wide">
-                    收获
-                  </h4>
-                  <p className="text-[14px] leading-[1.95] text-base-text whitespace-pre-wrap">
+                <section className="pt-6 border-t border-hairline">
+                  <h4 className="text-[12px] font-semibold text-ink-tertiary mb-2.5 tracking-wide">收获</h4>
+                  <p className="text-[14.5px] leading-[1.95] text-ink whitespace-pre-wrap">
                     {selectedEntry.feelings}
                   </p>
                 </section>
               )}
               {selectedEntry.other && (
-                <section className="pt-6 border-t border-base-line">
-                  <h4 className="text-[12px] font-semibold text-base-muted mb-2.5 tracking-wide">
+                <section className="pt-6 border-t border-hairline">
+                  <h4 className="text-[12px] font-semibold text-ink-tertiary mb-2.5 tracking-wide">
                     值得记住的
                   </h4>
-                  <p className="text-[14px] leading-[1.95] text-base-text whitespace-pre-wrap">
+                  <p className="text-[14.5px] leading-[1.95] text-ink whitespace-pre-wrap">
                     {selectedEntry.other}
                   </p>
                 </section>

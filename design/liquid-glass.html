@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Liquid Glass 原型</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue: #0A84FF;
+    --label: #1C1C1E;
+    --label2: rgba(60, 60, 67, 0.62);
+    --label3: rgba(60, 60, 67, 0.34);
+    --hairline: rgba(60, 60, 67, 0.13);
+
+    --glass: rgba(255, 255, 255, 0.42);
+    --glass-strong: rgba(255, 255, 255, 0.66);
+    --glass-edge: rgba(255, 255, 255, 0.72);
+
+    --r-lg: 26px;
+    --r-md: 20px;
+    --r-sm: 14px;
+
+    /* iOS 风格弹簧曲线 */
+    --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  html, body { width: 1280px; }
+  body {
+    font-family: -apple-system, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--label);
+    background: #EFF2F7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ============ 背景：彩色光斑（玻璃要有东西可透） ============ */
+  .stage { position: relative; min-height: 100vh; overflow: hidden; }
+  .mesh { position: absolute; inset: 0; z-index: 0; }
+  .mesh i {
+    position: absolute; display: block; border-radius: 50%;
+    filter: blur(96px); opacity: .58;
+    animation: drift 26s var(--ease) infinite alternate;
+  }
+  .mesh i:nth-child(1) { width: 780px; height: 780px; background: #5CA8FF; top: -280px; left: -200px; }
+  .mesh i:nth-child(2) { width: 620px; height: 620px; background: #FFAE94; top: -200px; right: -140px; animation-duration: 31s; animation-direction: alternate-reverse; }
+  .mesh i:nth-child(3) { width: 720px; height: 720px; background: #7FD4E8; bottom: -320px; left: 160px; animation-duration: 24s; }
+  .mesh i:nth-child(4) { width: 540px; height: 540px; background: #A8C0FF; bottom: -220px; right: 60px; animation-duration: 29s; animation-direction: alternate-reverse; }
+  @keyframes drift {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to   { transform: translate3d(60px, 40px, 0) scale(1.12); }
+  }
+
+  /* ============ 玻璃材质 ============ */
+  .glass {
+    position: relative;
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(28px) saturate(185%);
+    backdrop-filter: blur(28px) saturate(185%);
+    border: 1px solid var(--glass-edge);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.9),
+      inset 0 -1px 0 0 rgba(255, 255, 255, 0.28),
+      0 10px 40px -14px rgba(28, 38, 64, 0.24);
+    border-radius: var(--r-lg);
+  }
+  /* 顶部高光 —— 玻璃的「厚度」就靠它 */
+  .glass::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit;
+    pointer-events: none;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.7) 0%, rgba(255,255,255,.12) 22%, rgba(255,255,255,0) 50%),
+      radial-gradient(120% 60% at 12% 0%, rgba(255,255,255,.5), rgba(255,255,255,0) 60%);
+  }
+  .glass > * { position: relative; }
+
+  /* ============ 布局 ============ */
+  .shell { position: relative; z-index: 1; display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 244px; flex: 0 0 244px; margin: 16px 0 16px 16px;
+    padding: 26px 16px 20px;
+    display: flex; flex-direction: column;
+    border-radius: var(--r-lg);
+  }
+  .brand { display: flex; align-items: center; gap: 11px; padding: 0 8px 26px; }
+  .brand .mark {
+    width: 36px; height: 36px; border-radius: 11px; flex: 0 0 36px;
+    background: linear-gradient(160deg, #4EA8FF, #0A84FF);
+    box-shadow: 0 6px 16px -6px rgba(10,132,255,.75), inset 0 1px 0 rgba(255,255,255,.6);
+    display: grid; place-items: center; color: #fff; font-size: 17px;
+  }
+  .brand h1 { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+  .brand p { font-size: 11px; color: var(--label3); margin-top: 3px; }
+
+  .nav { display: grid; gap: 3px; }
+  .nav a {
+    display: flex; align-items: center; gap: 11px;
+    padding: 10px 12px; border-radius: var(--r-sm);
+    font-size: 13.5px; color: var(--label2); text-decoration: none;
+    transition: background .3s var(--ease), color .3s var(--ease), transform .4s var(--spring);
+  }
+  .nav a:hover { background: rgba(255,255,255,.55); color: var(--label); }
+  .nav a:active { transform: scale(.97); }
+  .nav a.on {
+    background: rgba(255,255,255,.72);
+    color: var(--label); font-weight: 600;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 2px 10px -4px rgba(28,38,64,.2);
+  }
+  .nav a .ico { width: 17px; height: 17px; opacity: .55; }
+  .nav a.on .ico { opacity: 1; color: var(--blue); }
+  .side-foot { margin-top: auto; padding: 14px 10px 0; border-top: 1px solid var(--hairline); font-size: 11px; color: var(--label3); }
+
+  .main { flex: 1; padding: 16px 22px 40px; min-width: 0; }
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px; border-radius: var(--r-md); margin-bottom: 20px;
+  }
+  .topbar .t { font-size: 20px; font-weight: 700; letter-spacing: -.02em; }
+  .topbar .r { display: flex; align-items: center; gap: 10px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 13px; border-radius: 999px; font-size: 12.5px;
+    background: rgba(255,255,255,.6); border: 1px solid rgba(255,255,255,.8);
+    color: var(--label2); font-weight: 500;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
+    transition: transform .4s var(--spring), background .3s var(--ease);
+  }
+  .pill:hover { background: rgba(255,255,255,.82); }
+  .pill:active { transform: scale(.95); }
+
+  .wrap { max-width: 700px; }
+
+  .fields { display: grid; gap: 14px; }
+  .field { padding: 18px 20px 20px; cursor: text; }
+  .field .head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 11px; }
+  .field .head h3 { font-size: 14.5px; font-weight: 600; letter-spacing: -.01em; }
+  .field .head span { font-size: 11.5px; color: var(--label3); }
+  .field .body { font-size: 14.5px; line-height: 1.92; min-height: 52px; color: var(--label); }
+  .field .body.ph { color: var(--label3); }
+  .field { transition: transform .5s var(--spring), box-shadow .35s var(--ease), background .35s var(--ease); }
+  .field:hover { transform: translateY(-2px); box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 18px 46px -18px rgba(28,38,64,.3); }
+  .field.focus {
+    background: rgba(255,255,255,.72);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.95),
+      0 0 0 3.5px rgba(10,132,255,.22),
+      0 18px 46px -18px rgba(28,38,64,.3);
+  }
+  .caret { display: inline-block; width: 1.5px; height: 17px; background: var(--blue); vertical-align: -3px; animation: blink 1.1s steps(1) infinite; }
+  @keyframes blink { 0%,49% { opacity: 1 } 50%,100% { opacity: 0 } }
+
+  .actions { display: flex; align-items: center; gap: 12px; margin-top: 22px; }
+  .btn {
+    border: 0; font-family: inherit; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+    border-radius: 999px; padding: 13px 30px; font-size: 14.5px; font-weight: 600;
+    transition: transform .45s var(--spring), box-shadow .3s var(--ease), filter .3s var(--ease);
+  }
+  .btn-primary {
+    color: #fff;
+    background: linear-gradient(170deg, #3FA0FF, #0A84FF);
+    box-shadow: 0 10px 26px -10px rgba(10,132,255,.9), inset 0 1px 0 rgba(255,255,255,.45);
+  }
+  .btn-primary:hover { filter: brightness(1.06); transform: translateY(-1px); }
+  .btn-primary:active { transform: scale(.955); box-shadow: 0 4px 14px -6px rgba(10,132,255,.9), inset 0 1px 0 rgba(255,255,255,.45); }
+  .btn-ghost {
+    color: var(--label2); background: rgba(255,255,255,.55);
+    border: 1px solid rgba(255,255,255,.8);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
+  }
+  .btn-ghost:hover { background: rgba(255,255,255,.8); color: var(--label); }
+  .btn-ghost:active { transform: scale(.955); }
+
+  .hint-line { margin-top: 26px; font-size: 12px; color: var(--label3); }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="mesh"><i></i><i></i><i></i><i></i></div>
+
+  <div class="shell">
+    <!-- 侧边栏 -->
+    <aside class="sidebar glass">
+      <div class="brand">
+        <div class="mark">✎</div>
+        <div>
+          <h1>企业实践日记</h1>
+          <p>记录每一天的成长</p>
+        </div>
+      </div>
+      <nav class="nav">
+        <a class="on" href="#"><svg class="ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13.2 3.6l3.2 3.2L7 16.2H3.8v-3.2l9.4-9.4z"/></svg>新建日记</a>
+        <a href="#"><svg class="ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="6.8"/><path d="M10 6.4V10l2.6 1.8"/></svg>历史记录</a>
+        <a href="#"><svg class="ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="2.6"/><path d="M10 2.2v2.2M10 15.6v2.2M2.2 10h2.2M15.6 10h2.2"/></svg>设置</a>
+      </nav>
+      <div class="side-foot">把今天，留成一段记录</div>
+    </aside>
+
+    <!-- 主区 -->
+    <div class="main">
+      <div class="topbar glass">
+        <div class="t">今天</div>
+        <div class="r">
+          <span class="pill">9月3日</span>
+          <span class="pill">PQE</span>
+        </div>
+      </div>
+
+      <div class="wrap">
+        <div class="fields">
+          <div class="field glass">
+            <div class="head"><h3>今天发生了什么</h3><span>现场工作、会议、异常、数据</span></div>
+            <div class="body">上午参加了产线巡检，记录了贴片机的抛料率异常。下午跟师傅学习了 QCP 的更新流程。</div>
+          </div>
+
+          <div class="field glass focus">
+            <div class="head"><h3>今天有什么收获</h3><span>学到的方法、新的认识</span></div>
+            <div class="body">开始能看懂抛料率数据背后的设备状态<span class="caret"></span></div>
+          </div>
+
+          <div class="field glass">
+            <div class="head"><h3>还想留下什么</h3><span>可留空</span></div>
+            <div class="body ph">临时事项、培训、会议、想记住的瞬间…</div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary">整理今天</button>
+          <button class="btn btn-ghost">用示例填充</button>
+        </div>
+        <p class="hint-line">魏源 · 余姚舜宇智能光学技术有限公司 · 草稿已自动保存</p>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

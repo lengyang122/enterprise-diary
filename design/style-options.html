@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>风格备选</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1280px; }
+  body { font-family: "Microsoft YaHei", -apple-system, sans-serif; }
+
+  .band { padding: 44px 0 56px; }
+  .label {
+    width: 1040px; margin: 0 auto 26px;
+    font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+    font-family: Consolas, monospace;
+  }
+  .label b { font-size: 15px; letter-spacing: .04em; display: block; margin-bottom: 6px; text-transform: none; font-family: inherit; }
+  .label span { opacity: .55; }
+  .page { width: 1040px; margin: 0 auto; }
+
+  /* ============ A. 纸本手记 ============ */
+  .A { background: #F7F3EA; --ink:#2B2723; --ink2:#6C655A; --ink3:#A29A8D; --line:#E3DCCC; --acc:#A8452F; }
+  .A .label { color: #A29A8D; }
+  .A .page { color: var(--ink); }
+  .A h1 { font-family: Georgia, "Songti SC", SimSun, serif; font-size: 40px; font-weight: 400; letter-spacing: .04em; }
+  .A .meta { margin-top: 14px; font-size: 13px; color: var(--ink2); letter-spacing: .02em; }
+  .A .meta i { font-style: normal; color: var(--ink3); margin: 0 10px; }
+  .A .who { margin-top: 6px; font-size: 12px; color: var(--ink3); }
+  .A .fields { margin-top: 40px; }
+  .A .f { margin-bottom: 34px; }
+  .A .f .t { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+  .A .f .t h3 { font-family: Georgia, "Songti SC", SimSun, serif; font-size: 17px; font-weight: 400; letter-spacing: .04em; }
+  .A .f .t em { font-style: normal; font-size: 12px; color: var(--ink3); }
+  .A .f .box { border-bottom: 1px solid var(--line); padding-bottom: 12px; min-height: 46px; font-size: 15px; line-height: 1.95; }
+  .A .f .box.ph { color: var(--ink3); }
+  .A .cta { margin-top: 40px; }
+  .A .cta button {
+    background: var(--ink); color: #F7F3EA; border: 0; border-radius: 5px;
+    padding: 12px 30px; font-size: 14px; letter-spacing: .02em; font-family: inherit;
+  }
+
+  /* ============ B. 冷淡工具 ============ */
+  .B { background: #FFFFFF; --ink:#101010; --ink2:#5A5A5A; --ink3:#9A9A9A; --line:#E2E2E2; --acc:#17456E; }
+  .B .label { color: #9A9A9A; }
+  .B .page { color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 40px 44px 44px; }
+  .B h1 { font-size: 24px; font-weight: 700; letter-spacing: -.01em; }
+  .B .meta { margin-top: 12px; font-size: 12px; color: var(--ink2); font-family: Consolas, monospace; letter-spacing: .04em; }
+  .B .who { margin-top: 4px; font-size: 12px; color: var(--ink3); }
+  .B .fields { margin-top: 32px; display: grid; gap: 14px; }
+  .B .f { border: 1px solid var(--line); border-radius: 5px; padding: 14px 16px; }
+  .B .f .t { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .B .f .t h3 { font-size: 13px; font-weight: 600; }
+  .B .f .t em { font-style: normal; font-size: 11px; color: var(--ink3); }
+  .B .f .box { font-size: 14px; line-height: 1.85; min-height: 40px; }
+  .B .f .box.ph { color: var(--ink3); }
+  .B .cta { margin-top: 28px; display: flex; gap: 10px; }
+  .B .cta button {
+    border: 0; border-radius: 5px; padding: 11px 26px; font-size: 13.5px; font-family: inherit;
+    background: var(--ink); color: #fff;
+  }
+  .B .cta button.ghost { background: #fff; color: var(--ink2); border: 1px solid var(--line); }
+
+  /* ============ C. 墨夜 ============ */
+  .C { background: #15151A; --ink:#EDEAE3; --ink2:#A5A199; --ink3:#6B6862; --line:#2A2A31; --acc:#E0A458; }
+  .C .label { color: #6B6862; }
+  .C .page { color: var(--ink); }
+  .C h1 { font-family: Georgia, "Songti SC", SimSun, serif; font-size: 38px; font-weight: 400; letter-spacing: .05em; }
+  .C .meta { margin-top: 14px; font-size: 13px; color: var(--ink2); }
+  .C .meta i { font-style: normal; color: var(--ink3); margin: 0 10px; }
+  .C .meta b { color: var(--acc); font-weight: 500; }
+  .C .who { margin-top: 6px; font-size: 12px; color: var(--ink3); }
+  .C .fields { margin-top: 40px; }
+  .C .f { margin-bottom: 32px; }
+  .C .f .t { display: flex; align-items: baseline; gap: 12px; margin-bottom: 13px; }
+  .C .f .t h3 { font-size: 14px; font-weight: 500; letter-spacing: .06em; color: var(--ink); }
+  .C .f .t em { font-style: normal; font-size: 12px; color: var(--ink3); }
+  .C .f .box {
+    font-size: 15px; line-height: 1.95; min-height: 44px;
+    border-bottom: 1px solid var(--line); padding-bottom: 12px;
+  }
+  .C .f .box.ph { color: var(--ink3); }
+  .C .cta { margin-top: 38px; }
+  .C .cta button {
+    background: transparent; color: var(--acc); border: 1px solid var(--acc);
+    border-radius: 5px; padding: 11px 28px; font-size: 14px; letter-spacing: .02em; font-family: inherit;
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== A ===================== -->
+<section class="band A">
+  <div class="label"><b>方向 A · 纸本手记</b><span>暖纸底 / 衬线标题 / 下划线输入区 / 墨色按钮 / 朱砂点缀</span></div>
+  <div class="page">
+    <h1>今天</h1>
+    <div class="meta">9月3日<i>·</i>PQE</div>
+    <div class="who">魏源 · 余姚舜宇智能光学技术有限公司</div>
+    <div class="fields">
+      <div class="f">
+        <div class="t"><h3>今天发生了什么</h3><em>现场工作、会议、异常、数据</em></div>
+        <div class="box">上午参加了产线巡检，记录了贴片机的抛料率异常。下午跟师傅学习了 QCP 的更新流程。</div>
+      </div>
+      <div class="f">
+        <div class="t"><h3>今天有什么收获</h3><em>学到的方法、新的认识</em></div>
+        <div class="box">开始能看懂抛料率数据背后的设备状态。</div>
+      </div>
+      <div class="f">
+        <div class="t"><h3>还想留下什么</h3><em>可留空</em></div>
+        <div class="box ph">临时事项、培训、会议、想记住的瞬间…</div>
+      </div>
+    </div>
+    <div class="cta"><button>整理今天</button></div>
+  </div>
+</section>
+
+<!-- ===================== B ===================== -->
+<section class="band B">
+  <div class="label"><b>方向 B · 冷淡工具</b><span>纯白 / 无阴影硬边框 / 小圆角 / 高密度 / 等宽字体做元信息</span></div>
+  <div class="page">
+    <h1>今天</h1>
+    <div class="meta">2026-09-03 &nbsp;/&nbsp; PQE</div>
+    <div class="who">魏源 · 余姚舜宇智能光学技术有限公司</div>
+    <div class="fields">
+      <div class="f">
+        <div class="t"><h3>今天发生了什么</h3><em>现场工作、会议、异常、数据</em></div>
+        <div class="box">上午参加了产线巡检，记录了贴片机的抛料率异常。下午跟师傅学习了 QCP 的更新流程。</div>
+      </div>
+      <div class="f">
+        <div class="t"><h3>今天有什么收获</h3><em>学到的方法、新的认识</em></div>
+        <div class="box">开始能看懂抛料率数据背后的设备状态。</div>
+      </div>
+      <div class="f">
+        <div class="t"><h3>还想留下什么</h3><em>可留空</em></div>
+        <div class="box ph">临时事项、培训、会议、想记住的瞬间…</div>
+      </div>
+    </div>
+    <div class="cta"><button>整理今天</button><button class="ghost">清空</button></div>
+  </div>
+</section>
+
+<!-- ===================== C ===================== -->
+<section class="band C">
+  <div class="label"><b>方向 C · 墨夜</b><span>深色 / 衬线标题 / 暖琥珀点缀 / 下划线输入区 / 描边按钮</span></div>
+  <div class="page">
+    <h1>今天</h1>
+    <div class="meta">9月3日<i>·</i><b>PQE</b></div>
+    <div class="who">魏源 · 余姚舜宇智能光学技术有限公司</div>
+    <div class="fields">
+      <div class="f">
+        <div class="t"><h3>今天发生了什么</h3><em>现场工作、会议、异常、数据</em></div>
+        <div class="box">上午参加了产线巡检，记录了贴片机的抛料率异常。下午跟师傅学习了 QCP 的更新流程。</div>
+      </div>
+      <div class="f">
+        <div class="t"><h3>今天有什么收获</h3><em>学到的方法、新的认识</em></div>
+        <div class="box">开始能看懂抛料率数据背后的设备状态。</div>
+      </div>
+      <div class="f">
+        <div class="t"><h3>还想留下什么</h3><em>可留空</em></div>
+        <div class="box ph">临时事项、培训、会议、想记住的瞬间…</div>
+      </div>
+    </div>
+    <div class="cta"><button>整理今天</button></div>
+  </div>
+</section>
+
+</body>
+</html>

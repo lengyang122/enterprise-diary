@@ -2,35 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 全局基础样式 — 安静但不寡淡 */
+/* ============================================================
+   基础
+   ============================================================ */
+
 html {
-  scroll-behavior: smooth;
+  background:
+    linear-gradient(145deg, #e6edf6 0%, #eef1f6 38%, #f1eeea 72%, #edf1f4 100%);
+  background-attachment: fixed;
 }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI',
-    Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Microsoft YaHei',
+    'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f4f4f1;
-  color: #191a1e;
-}
-
-/* 滚动条 — 极简 */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
+  color: #1c1c1e;
   background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #d8d8d3;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #c2c2bc;
 }
 
 input,
@@ -39,56 +28,310 @@ button {
   font-family: inherit;
 }
 
-::selection {
-  background-color: rgba(91, 95, 214, 0.16);
-}
-
 input:focus,
-textarea:focus {
+textarea:focus,
+button:focus {
   outline: none;
 }
 
-/* 键盘可达性：只在键盘聚焦时显示焦点环，鼠标点击不显示 */
+/* 键盘可达性：只在键盘聚焦时显示焦点环 */
 :focus-visible {
-  outline: 2px solid rgba(91, 95, 214, 0.45);
-  outline-offset: 2px;
+  outline: 2px solid rgba(10, 132, 255, 0.5);
+  outline-offset: 3px;
 }
 
-/* 弱化数字输入的上下箭头 */
-input[type='number']::-webkit-inner-spin-button,
-input[type='number']::-webkit-outer-spin-button {
-  -webkit-appearance: none;
+::selection {
+  background: rgba(10, 132, 255, 0.18);
 }
+
+/* 极简滚动条 */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(60, 60, 67, 0.2);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(60, 60, 67, 0.32);
+}
+
+/* ============================================================
+   背景光斑 —— 玻璃必须有东西可透，这是整套材质成立的前提
+   低饱和：钢蓝 / 藕荷 / 灰青 / 一点暖褐，有层次但不跳
+   ============================================================ */
+
+.glass-mesh {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.glass-mesh i {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  filter: blur(96px);
+  opacity: 0.74;
+  animation: meshDrift 26s cubic-bezier(0.32, 0.72, 0, 1) infinite alternate;
+}
+
+.glass-mesh i:nth-child(1) {
+  width: 900px;
+  height: 900px;
+  background: #8fb0d8;
+  top: -360px;
+  left: -240px;
+}
+.glass-mesh i:nth-child(2) {
+  width: 820px;
+  height: 820px;
+  background: #bfc9e2;
+  top: -300px;
+  right: -200px;
+  animation-duration: 31s;
+  animation-direction: alternate-reverse;
+}
+.glass-mesh i:nth-child(3) {
+  width: 880px;
+  height: 880px;
+  background: #9fc4d6;
+  bottom: -420px;
+  left: 180px;
+  animation-duration: 24s;
+}
+.glass-mesh i:nth-child(4) {
+  width: 720px;
+  height: 720px;
+  background: #d9cdc3;
+  bottom: -340px;
+  right: 40px;
+  animation-duration: 29s;
+  animation-direction: alternate-reverse;
+}
+
+@keyframes meshDrift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(58px, 42px, 0) scale(1.12);
+  }
+}
+
+/* ============================================================
+   玻璃材质
+   厚度 = 内侧顶部高光 + 内侧底部微光 + 极淡外阴影（不是靠外阴影撑层次）
+   ============================================================ */
 
 @layer components {
-  /* 标准卡片：白底 + 极淡描边 + 贴地阴影，是整套界面的层次基准 */
-  .card {
-    @apply bg-base-surface border border-base-line rounded-card shadow-card;
+  .glass {
+    position: relative;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    background: rgba(255, 255, 255, 0.42);
+    -webkit-backdrop-filter: blur(28px) saturate(185%);
+    backdrop-filter: blur(28px) saturate(185%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.28),
+      0 10px 40px -14px rgba(28, 38, 64, 0.24);
   }
 
-  /* 主按钮：accent 实心 + 光晕 */
+  /* 顶部白 → 透明的镜面渐变，玻璃的「液态」感主要来自它 */
+  .glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.7) 0%,
+      rgba(255, 255, 255, 0.12) 22%,
+      rgba(255, 255, 255, 0) 50%
+    );
+  }
+
+  .glass > * {
+    position: relative;
+  }
+
+  .rounded-glass-lg {
+    border-radius: 26px;
+  }
+  .rounded-glass-sm {
+    border-radius: 14px;
+  }
+
+  /* 可交互玻璃：悬停浮起、按压回弹 */
+  .glass-hover {
+    transition:
+      transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+      box-shadow 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+      background 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .glass-hover:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      0 18px 46px -18px rgba(28, 38, 64, 0.3);
+  }
+  .glass-hover:active {
+    transform: scale(0.99);
+  }
+
+  /* 聚焦态：玻璃提亮 + 蓝色光环 */
+  .glass-focus {
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      0 0 0 3.5px rgba(10, 132, 255, 0.22),
+      0 18px 46px -18px rgba(28, 38, 64, 0.3);
+  }
+
+  /* ---------- 按钮 ---------- */
+
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-button bg-base-accent text-white
-      font-medium shadow-accent transition-all duration-200
-      hover:bg-base-accent-hover active:scale-[0.98] disabled:opacity-50 disabled:shadow-none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 0;
+    cursor: pointer;
+    border-radius: 999px;
+    padding: 12px 28px;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: #fff;
+    background: linear-gradient(170deg, #3fa0ff, #0a84ff);
+    box-shadow:
+      0 10px 26px -10px rgba(10, 132, 255, 0.9),
+      inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    transition:
+      transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+      filter 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+  .btn-primary:hover {
+    filter: brightness(1.06);
+  }
+  .btn-primary:active {
+    transform: scale(0.955);
+  }
+  .btn-primary:disabled {
+    opacity: 0.5;
+    filter: none;
+    box-shadow: none;
   }
 
-  /* 次按钮：描边 */
-  .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-button border border-base-line
-      bg-base-surface text-base-secondary transition-all duration-200
-      hover:border-base-line-strong hover:text-base-text active:scale-[0.98]
-      disabled:opacity-50;
+  .btn-glass {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    border-radius: 999px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(60, 60, 67, 0.62);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.55);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    transition:
+      transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+      background 0.3s ease,
+      color 0.3s ease;
+  }
+  .btn-glass:hover {
+    background: rgba(255, 255, 255, 0.82);
+    color: #1c1c1e;
+  }
+  .btn-glass:active {
+    transform: scale(0.955);
   }
 
-  /* 纯文字按钮 */
   .btn-quiet {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-button text-base-muted
-      transition-colors duration-200 hover:text-base-text;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    border: 0;
+    background: transparent;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: rgba(60, 60, 67, 0.62);
+    transition:
+      color 0.25s ease,
+      background 0.25s ease;
+  }
+  .btn-quiet:hover {
+    color: #1c1c1e;
+    background: rgba(255, 255, 255, 0.5);
   }
 
-  /* 小标签 */
+  /* ---------- 标签 ---------- */
+
   .chip {
-    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] transition-colors duration-200;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.3;
+  }
+
+  .chip-glass {
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    color: rgba(60, 60, 67, 0.62);
+    transition:
+      transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+      background 0.3s ease;
+  }
+  .chip-glass:hover {
+    background: rgba(255, 255, 255, 0.85);
+  }
+  .chip-glass:active {
+    transform: scale(0.95);
+  }
+}
+
+/* ============================================================
+   尊重系统的「减弱动态效果」
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .glass-mesh i {
+    animation: none;
+  }
+  .animate-riseIn,
+  .animate-popIn,
+  .animate-fadeIn,
+  .animate-drift,
+  .animate-softPulse {
+    animation: none !important;
+  }
+  .glass-hover,
+  .btn-primary,
+  .btn-glass,
+  .btn-quiet,
+  .chip-glass {
+    transition-duration: 0.01ms !important;
+  }
+  .glass-hover:hover {
+    transform: none;
   }
 }
