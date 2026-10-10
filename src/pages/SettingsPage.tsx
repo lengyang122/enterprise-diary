@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, type FormEvent, type ChangeEvent } from 'react'
 import { getAIConfig, saveAIConfig, type AIConfig } from '../lib/aiConfig'
+import { testAIConnection, type ConnectionTestResult } from '../lib/ai'
 import { saveProfile, getProfile, getDiaries } from '../lib/storage'
 import {
   downloadBackup,
@@ -37,6 +38,8 @@ export default function SettingsPage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [aiConfig, setAiConfig] = useState<AIConfig>(getAIConfig())
   const [saving, setSaving] = useState(false)
+  const [testing, setTesting] = useState(false)
+  const [testResult, setTestResult] = useState<ConnectionTestResult | null>(null)
   const [saved, setSaved] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [loading, setLoading] = useState(true)
@@ -114,6 +117,20 @@ export default function SettingsPage() {
     saveAIConfig(aiConfig)
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
+  }
+
+  // 用当前屏幕上的配置发一次真实最小请求，先把配置落盘以免测到旧值
+  async function handleTestConnection() {
+    setTesting(true)
+    setTestResult(null)
+    try {
+      saveAIConfig(aiConfig)
+      setTestResult(await testAIConnection(aiConfig))
+    } catch (e: unknown) {
+      setTestResult({ ok: false, message: e instanceof Error ? e.message : String(e) })
+    } finally {
+      setTesting(false)
+    }
   }
 
   // === 数据备份 ===
@@ -309,7 +326,15 @@ export default function SettingsPage() {
               className={inputCls}
             />
           </SettingRow>
-          <div className="py-4 flex justify-end">
+          <div className="py-4 flex items-center justify-end gap-2.5">
+            <button
+              type="button"
+              onClick={handleTestConnection}
+              disabled={testing}
+              className="btn-ghost px-4 py-2 text-[13px]"
+            >
+              {testing ? '测试中…' : '测试连接'}
+            </button>
             <button
               type="button"
               onClick={handleAiConfigSave}
@@ -318,6 +343,18 @@ export default function SettingsPage() {
               保存 AI 配置
             </button>
           </div>
+
+          {testResult && (
+            <div
+              className={`mb-4 rounded-[10px] px-3.5 py-2.5 text-[12px] leading-relaxed break-all ${
+                testResult.ok
+                  ? 'bg-base-success-soft text-base-success'
+                  : 'bg-red-50 text-red-600 border border-red-200'
+              }`}
+            >
+              {testResult.message}
+            </div>
+          )}
         </div>
       </section>
 

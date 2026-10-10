@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { generateDiaryContent, regenerateSection } from './ai'
+import { generateDiaryContent, regenerateSection, testAIConnection } from './ai'
 import { saveAIConfig, DEFAULT_AI_CONFIG } from './aiConfig'
 import { countHanzi } from './text'
 import type { DiaryFormInput } from '../types'
@@ -141,5 +141,65 @@ describe('regenerateSection', () => {
   it('未配置 API Key 时报错', async () => {
     localStorage.clear()
     await expect(regenerateSection('content', input)).rejects.toThrow('API Key')
+  })
+})
+
+describe('testAIConnection', () => {
+  let fetchMock: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    localStorage.clear()
+    fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+  })
+
+  afterEach(() => vi.unstubAllGlobals())
+
+  const cfg = (over: Record<string, string> = {}) => ({
+    ...DEFAULT_AI_CONFIG,
+    apiKey: 'sk-test',
+    ...over,
+  })
+
+  it('未填 API Key 时不发请求', async () => {
+    const r = await testAIConnection(cfg({ apiKey: '' }))
+    expect(r.ok).toBe(false)
+    expect(r.message).toContain('API Key')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('未填 API 地址时不发请求', async () => {
+    const r = await testAIConnection(cfg({ apiUrl: '' }))
+    expect(r.ok).toBe(false)
+    expect(r.message).toContain('API 地址')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('成功时回报耗时与模型', async () => {
+    fetchMock.mockResolvedValue(chatResponse('ok'))
+    const r = await testAIConnection(cfg({ model: 'my-model' }))
+    expect(r.ok).toBe(true)
+    expect(r.message).toContain('连接正常')
+    expect(r.message).toContain('my-model')
+    expect(typeof r.latencyMs).toBe('number')
+  })
+
+  it('鉴权失败时回报网关给出的原因', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 401,
+      text: async () => JSON.stringify({ error: { message: 'invalid api key' } }),
+    } as unknown as Response)
+
+    const r = await testAIConnection(cfg())
+    expect(r.ok).toBe(false)
+    expect(r.message).toContain('invalid api key')
+  })
+
+  it('网络异常时回报可读错误而不是抛出', async () => {
+    fetchMock.mockRejectedValue(new Error('connect ECONNREFUSED'))
+    const r = await testAIConnection(cfg())
+    expect(r.ok).toBe(false)
+    expect(r.message).toContain('网络连接失败')
   })
 })

@@ -163,6 +163,45 @@ async function callAI(config: AIConfig, input: DiaryFormInput, retryHint = ''): 
   return callAPI(config, buildPrompt(input) + retryHint, 4000, retryHint ? 0.8 : 0.7)
 }
 
+// ============================================================
+// 连接自检 —— 用一个最小请求验证 API Key / 地址 / 模型是否可用
+// 与生成流程分开，便于把「配置问题」和「生成质量问题」区分开
+// ============================================================
+
+export interface ConnectionTestResult {
+  ok: boolean
+  message: string
+  latencyMs?: number
+}
+
+export async function testAIConnection(config: AIConfig): Promise<ConnectionTestResult> {
+  if (!config.apiKey) {
+    return { ok: false, message: '请先填写 API Key' }
+  }
+  if (!config.apiUrl) {
+    return { ok: false, message: '请先填写 API 地址' }
+  }
+
+  const started = Date.now()
+  try {
+    const reply = await postChat(config, {
+      model: config.model,
+      messages: [{ role: 'user', content: '回复 ok' }],
+      max_tokens: 16,
+      temperature: 0,
+    })
+    const latencyMs = Date.now() - started
+    const preview = reply.trim().replace(/\s+/g, ' ').slice(0, 20) || '(空)'
+    return {
+      ok: true,
+      latencyMs,
+      message: `连接正常 · 用时 ${latencyMs}ms · 模型 ${config.model} · 返回「${preview}」`,
+    }
+  } catch (e: unknown) {
+    return { ok: false, message: e instanceof Error ? e.message : String(e) }
+  }
+}
+
 // ---- 单栏生成 ----
 
 function sectionPrompt(def: SectionTarget, input: DiaryFormInput, extra = ''): string {

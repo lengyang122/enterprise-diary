@@ -32,6 +32,8 @@ export default {
           'accent-ring': 'rgba(91, 95, 214, 0.22)',
           amber: '#B5761A',
           'amber-soft': 'rgba(181, 118, 26, 0.10)',
+          success: '#1B7A4B',
+          'success-soft': 'rgba(27, 122, 75, 0.10)',
         },
       },
       borderRadius: {
