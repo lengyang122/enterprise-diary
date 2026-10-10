@@ -1,254 +1,169 @@
-import {
-  Document,
-  Packer,
-  Paragraph,
-  TextRun,
-  Table,
-  TableRow,
-  TableCell,
-  AlignmentType,
-  WidthType,
-} from 'docx'
+// 基于学校原始模板 .docx 填充文字，保留 100% 原始格式
 import { saveAs } from 'file-saver'
+import JSZip from 'jszip'
+import { TEMPLATE_BASE64 } from './templateData'
 import type { DiaryWordData } from '../types'
 
-// 创建 Word 文档
-export async function generateWord(data: DiaryWordData): Promise<Blob> {
-  const doc = new Document({
-    sections: [
-      {
-        properties: {
-          page: {
-            margin: {
-              top: 1440,   // 1 inch
-              right: 1440,
-              bottom: 1440,
-              left: 1440,
-            },
-          },
-        },
-        children: [
-          // === 标题区 ===
-          // 中国计量大学（居中，36pt ≈ 72 半磅）
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            children: [
-              new TextRun({
-                text: '中国计量大学',
-                bold: true,
-                size: 72, // half-point: 72 = 36pt
-                font: '黑体',
-              }),
-            ],
-          }),
+// === 工具函数 ===
 
-          // 学院名称
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 60 },
-            children: [
-              new TextRun({
-                text: '管理科学与工程学院（质量与标准化学院）',
-                size: 44,
-                font: '宋体',
-              }),
-            ],
-          }),
-
-          // 专业名称
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 60 },
-            children: [
-              new TextRun({
-                text: '质量管理工程专业',
-                bold: true,
-                size: 52,
-                font: '黑体',
-              }),
-            ],
-          }),
-
-          // 企业实践日记
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 200 },
-            children: [
-              new TextRun({
-                text: '企业实践日记',
-                bold: true,
-                size: 52,
-                font: '黑体',
-              }),
-            ],
-          }),
-
-          // === 固定信息 ===
-          infoLine('姓    名：', data.name),
-          infoLine('学    号：', data.student_id),
-          infoLine('班    级：', data.class_name),
-          infoLine('学院名称：', data.college),
-          infoLine('专业指导教师：', data.teacher),
-          infoLine('实习单位：', data.company),
-          infoLine('企业指导教师：', data.company_teacher),
-          infoLine('实习时间：', `${data.start_date}~${data.end_date}`),
-
-          new Paragraph({ spacing: { after: 200 }, children: [] }),
-
-          // === 每日日记表格 ===
-          createDiaryTable(data),
-
-          // === 备注 ===
-          new Paragraph({
-            spacing: { before: 200 },
-            children: [
-              new TextRun({
-                text: '备注：',
-                font: '宋体',
-                size: 24,
-              }),
-              new TextRun({
-                text: '实习时间按日填写',
-                font: '宋体',
-                size: 24,
-              }),
-            ],
-          }),
-        ],
-      },
-    ],
-  })
-
-  return await Packer.toBlob(doc)
+function countHanzi(text: string): number {
+  let count = 0
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i)
+    if (code >= 0x4E00 && code <= 0x9FFF) count++
+  }
+  return count
 }
 
-// 信息行
-function infoLine(label: string, value: string): Paragraph {
-  return new Paragraph({
-    alignment: AlignmentType.LEFT,
-    indent: { firstLine: 1120 },
-    spacing: { after: 40 },
-    children: [
-      new TextRun({
-        text: label,
-        size: 32,
-        font: '黑体',
-      }),
-      new TextRun({
-        text: value,
-        size: 32,
-        font: '黑体',
-        underline: { type: 'single' },
-      }),
-    ],
-  })
+function safeText(text: string, max = 80): string {
+  let count = 0
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i)
+    if (code >= 0x4E00 && code <= 0x9FFF) count++
+    if (count > max) return text.slice(0, i).replace(/[，,、\s]*$/, '') + '。'
+  }
+  return text
 }
 
-// 创建日记表格
-function createDiaryTable(data: DiaryWordData): Table {
-  // 字体大小：24 半磅 = 12pt
-  const CELL_SIZE = 24
-
-  return new Table({
-    width: {
-      size: 8296,
-      type: WidthType.DXA,
-    },
-    rows: [
-      // 第1行：实习时间 | 实习岗位
-      new TableRow({
-        tableHeader: true,
-        children: [
-          new TableCell({
-            width: { size: 3885, type: WidthType.DXA },
-            children: [
-              new Paragraph({
-                spacing: { line: 360 },
-                children: [
-                  new TextRun({ text: '实习时间：', size: CELL_SIZE, font: '宋体' }),
-                  new TextRun({ text: data.date, size: CELL_SIZE, font: '宋体' }),
-                ],
-              }),
-            ],
-          }),
-          new TableCell({
-            width: { size: 4411, type: WidthType.DXA },
-            children: [
-              new Paragraph({
-                spacing: { line: 360 },
-                children: [
-                  new TextRun({ text: '实习岗位：', size: CELL_SIZE, font: '宋体' }),
-                  new TextRun({ text: data.position, size: CELL_SIZE, font: '宋体' }),
-                ],
-              }),
-            ],
-          }),
-        ],
-      }),
-
-      // 第2行：实习内容（跨两列）
-      new TableRow({
-        children: [
-          new TableCell({
-            columnSpan: 2,
-            width: { size: 8296, type: WidthType.DXA },
-            children: [
-              new Paragraph({
-                spacing: { line: 360 },
-                children: [
-                  new TextRun({ text: '实习内容：', size: CELL_SIZE, font: '宋体', bold: true }),
-                  new TextRun({ text: data.content, size: CELL_SIZE, font: '宋体' }),
-                ],
-              }),
-            ],
-          }),
-        ],
-      }),
-
-      // 第3行：实习体会和感受（跨两列）
-      new TableRow({
-        children: [
-          new TableCell({
-            columnSpan: 2,
-            width: { size: 8296, type: WidthType.DXA },
-            children: [
-              new Paragraph({
-                spacing: { line: 360 },
-                children: [
-                  new TextRun({ text: '实习体会和感受：', size: CELL_SIZE, font: '宋体', bold: true }),
-                  new TextRun({ text: data.feelings, size: CELL_SIZE, font: '宋体' }),
-                ],
-              }),
-            ],
-          }),
-        ],
-      }),
-
-      // 第4行：其他（跨两列）
-      new TableRow({
-        children: [
-          new TableCell({
-            columnSpan: 2,
-            width: { size: 8296, type: WidthType.DXA },
-            children: [
-              new Paragraph({
-                spacing: { line: 360 },
-                children: [
-                  new TextRun({ text: '其他：', size: CELL_SIZE, font: '宋体', bold: true }),
-                  new TextRun({ text: data.other, size: CELL_SIZE, font: '宋体' }),
-                ],
-              }),
-            ],
-          }),
-        ],
-      }),
-    ],
-  })
+function esc(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
-// 下载 Word 文件
+// ============================================================
+// 核心替换逻辑：定位到 <w:r> 级别，保留格式
+// ============================================================
+
+interface WrBlock {
+  start: number      // <w:r 的位置
+  end: number        // </w:r> 之后的位置
+  prefix: string     // <w:r> 到 <w:t 之间的内容（含 <w:rPr> 格式）
+  prefixIndent: string // <w:r> 前面的空白字符
+  text: string       // <w:t> 内的文本
+}
+
+function replaceInXml(xml: string, oldText: string, newText: string): string {
+  if (!oldText) return xml
+
+  // 匹配每个完整的 <w:r>...</w:r> 块（非贪婪，排除 <w:rPr>）
+  const wrRe = /(\s*)<w:r\b([^>]*)>([\s\S]*?)<\/w:r>/g
+  const blocks: WrBlock[] = []
+  let m: RegExpExecArray | null
+  while ((m = wrRe.exec(xml)) !== null) {
+    const full = m[0]
+    const indent = m[1]
+    const inner = m[3]
+    // 从 inner 中找到 <w:t> 标签
+    const wtMatch = inner.match(/<w:t[^>]*>([^<]*)<\/w:t>/)
+    const text = wtMatch ? wtMatch[1] : ''
+    const wtTagIdx = inner.indexOf('<w:t')
+    // prefix = <w:r> 标签头 + inner 中 <w:t 之前的内容（即格式信息如 <w:rPr>）
+    const prefix = (m[2] ? ' ' + m[2].trim() : '') + '>' + (wtTagIdx >= 0 ? inner.slice(0, wtTagIdx) : inner)
+    blocks.push({
+      start: m.index,
+      end: m.index + full.length,
+      prefix,
+      prefixIndent: indent,
+      text,
+    })
+  }
+
+  // 拼接所有文本查找目标
+  const flat = blocks.map(b => b.text).join('')
+  const pos = flat.indexOf(oldText)
+  if (pos < 0) return xml
+
+  // 确定覆盖的 blocks 范围
+  let charIdx = 0
+  let first = -1
+  let last = -1
+  for (let i = 0; i < blocks.length; i++) {
+    const next = charIdx + blocks[i].text.length
+    // 当前 block 包含 pos（匹配起始位置）
+    if (first < 0 && next > pos) first = i
+    // 当前 block 包含 pos + oldText.length（匹配结束位置）
+    if (next >= pos + oldText.length) { last = i; break }
+    charIdx = next
+  }
+  if (first < 0 || last < 0) return xml
+
+  // 构建替换：保留第一个 <w:r> 的格式，去掉目标范围内的其他 <w:r>
+  const before = xml.slice(0, blocks[first].start)
+  const after = xml.slice(blocks[last].end)
+
+  // 用第一个 block 的 prefix（含 <w:rPr>）重建一个 <w:r> 元素
+  const replacement =
+    blocks[first].prefixIndent +
+    '<w:r' + blocks[first].prefix +
+    '<w:t xml:space="preserve">' + esc(newText) + '</w:t></w:r>'
+
+  return before + replacement + after
+}
+
+// ============================================================
+// 主函数
+// ============================================================
+
 export async function downloadWord(data: DiaryWordData, fileName?: string) {
-  const blob = await generateWord(data)
+  console.log('[Word] 开始生成...')
+  // 从嵌入的 base64 解码模板（无需网络请求）
+  const binary = atob(TEMPLATE_BASE64)
+  const buffer = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) buffer[i] = binary.charCodeAt(i)
+  console.log('[Word] 模板解码完成,', buffer.byteLength, 'bytes')
+
+  const zip = await JSZip.loadAsync(buffer)
+  let docXml = await zip.file('word/document.xml')!.async('string')
+
+  const content = safeText(data.content, 200)
+  const feelings = safeText(data.feelings, 200)
+  const other = safeText(data.other, 120)
+
+  console.log('[Word] 字数:', countHanzi(content), countHanzi(feelings), countHanzi(other))
+
+  // === 1. 替换个人信息 ===
+  const infoPairs: [string, string][] = [
+    ['魏源', data.name],
+    ['2300602425', data.student_id],
+    ['质卓4', data.class_name],
+    ['管理工程与科学', data.college],
+    ['陈家焱', data.teacher],
+    ['余姚舜宇智能光学技术有限公司', data.company],
+    ['陶凯', data.company_teacher],
+  ]
+
+  // 实习时间替换
+  const oldTimeRange = '2026年 7 月 7 日~   2027 年 5 月  7日'
+  const newTimeRange = `${data.start_date}~${data.end_date}`
+  docXml = replaceInXml(docXml, oldTimeRange, newTimeRange)
+
+  for (const [oldVal, newVal] of infoPairs) {
+    docXml = replaceInXml(docXml, oldVal, newVal)
+  }
+
+  // === 2. 替换表格内容 ===
+  docXml = replaceInXml(docXml, '7.17', data.date)
+  docXml = replaceInXml(docXml, 'PQE', data.position)
+
+  // 实习内容
+  const oldContent = '分配到SMT车间进行深入学习三天，今天为第二天，SMT相比于COB，防尘等级更低，车间面积更小，两个车间的任务不同但同时也是紧密联系，作为PQE，我们进入车间要重点学习QCP，质量管控重点，同时也发现了车间存在的生产问题，例如在AOI检测区域，机器的故障导致了产线的效率瞬间降低，如果不及时呼叫NPI部门人员协助，可能间接导致产线生产效率的下降'
+  docXml = replaceInXml(docXml, oldContent, content)
+
+  // 实习体会和感受
+  const oldFeelings = '进入车间，要抱着时刻学习的心态，了解每一个流程，才能做好PQE本职工作'
+  docXml = replaceInXml(docXml, oldFeelings, feelings)
+
+  // 其他
+  const oldOther = '质量永远是重中之重'
+  docXml = replaceInXml(docXml, oldOther, other)
+
+  // 写回并输出
+  zip.file('word/document.xml', docXml)
+  const outBlob = await zip.generateAsync({
+    type: 'blob',
+    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    compression: 'DEFLATE',
+  })
   const name = fileName || `企业实践日记_${data.name}_${data.date}.docx`
-  saveAs(blob, name)
+  saveAs(outBlob, name)
+  console.log('[Word] 完成')
 }

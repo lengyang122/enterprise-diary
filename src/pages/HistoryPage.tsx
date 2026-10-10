@@ -1,9 +1,18 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { getProfile, getDiaries, deleteDiary } from '../lib/storage'
 import { downloadWord } from '../lib/word'
 import type { Profile, DiaryEntry } from '../types'
 
-const PROFILE_ID_KEY = 'enterprise-diary-profile-id'
+// 从日期字符串解析 "8月23日" 或旧格式 "7.17" → { month, day }
+function parseDate(dateStr: string | undefined | null): { month: string; day: string } {
+  const s = (dateStr || '').trim()
+  const m = s.match(/(\d+)月(\d+)日/)
+  if (m) return { month: `${m[1]}月`, day: m[2] }
+  // 兼容旧格式 "7.17"
+  const old = s.match(/^(\d+)\.(\d+)$/)
+  if (old) return { month: `${old[1]}月`, day: old[2] }
+  return { month: '', day: s }
+}
 
 export default function HistoryPage() {
   const [entries, setEntries] = useState<DiaryEntry[]>([])
@@ -18,33 +27,21 @@ export default function HistoryPage() {
 
   async function loadData() {
     setLoading(true)
-    const storedId = localStorage.getItem(PROFILE_ID_KEY)
-    if (!storedId) {
-      setLoading(false)
-      return
-    }
-
-    const { data: prof } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', storedId)
-      .single()
-    if (prof) setProfile(prof)
-
-    const { data: diaries } = await supabase
-      .from('diaries')
-      .select('*')
-      .eq('profile_id', storedId)
-      .order('date', { ascending: false })
-    
-    if (diaries) setEntries(diaries)
+    try {
+      const prof = await getProfile()
+      if (prof) setProfile(prof as unknown as Profile)
+    } catch { /* ignore */ }
+    try {
+      const diaryData = await getDiaries()
+      if (diaryData) setEntries(diaryData as unknown as DiaryEntry[])
+    } catch { /* ignore */ }
     setLoading(false)
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('确定要删除这条日记吗？')) return
+    if (!confirm('确定要删除这篇记录吗？')) return
     setDeleting(id)
-    await supabase.from('diaries').delete().eq('id', id)
+    await deleteDiary(id)
     setEntries(entries.filter(e => e.id !== id))
     setDeleting(null)
     if (selectedEntry?.id === id) setSelectedEntry(null)
@@ -52,133 +49,152 @@ export default function HistoryPage() {
 
   async function handleDownload(entry: DiaryEntry) {
     if (!profile) return
-    await downloadWord({
-      name: profile.name,
-      student_id: profile.student_id,
-      class_name: profile.class_name,
-      college: profile.college,
-      teacher: profile.teacher,
-      company: profile.company,
-      company_teacher: profile.company_teacher,
-      start_date: profile.start_date,
-      end_date: profile.end_date,
-      date: entry.date,
-      position: entry.position,
-      content: entry.generated_content,
-      feelings: entry.generated_feelings,
-      other: entry.generated_other,
-    })
+    try {
+      await downloadWord({
+        name: profile.name,
+        student_id: profile.student_id,
+        class_name: profile.class_name,
+        college: profile.college,
+        teacher: profile.teacher,
+        company: profile.company,
+        company_teacher: profile.company_teacher,
+        start_date: profile.start_date,
+        end_date: profile.end_date,
+        date: entry.date,
+        position: entry.position,
+        content: entry.content,
+        feelings: entry.feelings,
+        other: entry.other,
+      })
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
+      alert('下载失败: ' + msg)
+    }
+  }
+
+  // 摘要：取内容前 40 字（防御 undefined）
+  function summary(text: string | undefined | null): string {
+    const safe = (text || '').replace(/\s+/g, ' ').trim()
+    return safe.length > 40 ? safe.slice(0, 40) + '…' : safe
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold tracking-tight">📚 历史记录</h2>
-        <p className="text-sm text-notion-text-secondary mt-1">
-          共 {entries.length} 篇日记
+    <div className="max-w-[680px] mx-auto animate-fadeIn">
+      {/* 标题 */}
+      <div className="mb-10">
+        <h2 className="text-[22px] font-medium tracking-tight text-base-text">成长档案</h2>
+        <p className="text-[13px] text-base-muted mt-1">
+          {entries.length} 篇记录
         </p>
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-notion-text-secondary">
-          加载中...
-        </div>
+        <div className="text-center py-16 text-base-muted text-sm">正在翻阅…</div>
       ) : entries.length === 0 ? (
-        <div className="text-center py-12 text-notion-text-secondary">
-          <p className="text-4xl mb-4">📝</p>
-          <p>还没有日记记录</p>
-          <p className="text-sm mt-1">去"新建日记"开始你的第一篇企业实践日记吧</p>
+        <div className="text-center py-16">
+          <p className="text-sm text-base-secondary">还没有记录</p>
+          <p className="text-[13px] text-base-muted mt-1.5">从「今天」开始，写下第一篇日记</p>
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-4">
-          {/* 列表 */}
-          <div className="col-span-1 space-y-2">
-            {entries.map(entry => (
+        <div className="space-y-2">
+          {/* 时间线列表 */}
+          {entries.map(entry => {
+            const { month, day } = parseDate(entry.date)
+            const active = selectedEntry?.id === entry.id
+            return (
               <button
                 key={entry.id}
                 onClick={() => setSelectedEntry(entry)}
-                className={`w-full text-left p-3 rounded-md border transition-colors ${
-                  selectedEntry?.id === entry.id
-                    ? 'border-notion-accent bg-blue-50'
-                    : 'border-notion-border bg-notion-card hover:bg-notion-hover'
+                className={`w-full flex items-start gap-5 px-4 py-4 rounded-[14px] text-left transition-all duration-200 group ${
+                  active
+                    ? 'bg-base-surface'
+                    : 'hover:bg-base-surface/60'
                 }`}
               >
-                <div className="text-sm font-medium">
-                  {entry.date}
-                  <span className="text-notion-text-secondary ml-2 font-normal">
-                    {entry.position}
-                  </span>
+                {/* 日期 */}
+                <div className={`flex flex-col items-center w-12 shrink-0 transition-colors duration-200 ${active ? 'text-base-accent' : 'text-base-secondary'}`}>
+                  <span className="text-[22px] font-medium leading-none tracking-tight">{day}</span>
+                  <span className="text-[11px] mt-1 text-base-muted">{month}</span>
                 </div>
-                <p className="text-xs text-notion-text-secondary mt-1 truncate">
-                  {entry.today_work}
-                </p>
-                <p className="text-xs text-notion-text-secondary mt-1">
-                  {new Date(entry.created_at).toLocaleDateString('zh-CN')}
-                </p>
+
+                {/* 分隔线 */}
+                <div className={`w-px self-stretch transition-colors duration-200 ${active ? 'bg-base-accent/40' : 'bg-base-line'}`} />
+
+                {/* 内容摘要 */}
+                <div className="flex-1 min-w-0 pt-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[13px] font-medium text-base-text">{entry.position}</span>
+                    <span className="text-[11px] text-base-muted">
+                      {entry.created_at
+                        ? new Date(entry.created_at).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' })
+                        : ''}
+                    </span>
+                  </div>
+                  <p className="text-[13px] text-base-secondary mt-1.5 leading-relaxed truncate">
+                    {summary(entry.content || entry.feelings || '（无摘要）')}
+                  </p>
+                </div>
               </button>
-            ))}
-          </div>
+            )
+          })}
+        </div>
+      )}
 
-          {/* 详情 */}
-          <div className="col-span-2">
-            {selectedEntry ? (
-              <div className="bg-notion-card rounded-lg border border-notion-border p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-medium">
-                      {selectedEntry.date}
-                      <span className="text-notion-text-secondary text-sm ml-2 font-normal">
-                        {selectedEntry.position}
-                      </span>
-                    </h3>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleDownload(selectedEntry)}
-                      className="px-3 py-1.5 text-sm border border-notion-border rounded-md hover:bg-notion-hover transition-colors"
-                    >
-                      📄 下载
-                    </button>
-                    <button
-                      onClick={() => handleDelete(selectedEntry.id)}
-                      disabled={deleting === selectedEntry.id}
-                      className="px-3 py-1.5 text-sm border border-red-200 text-red-600 rounded-md hover:bg-red-50 transition-colors disabled:opacity-50"
-                    >
-                      🗑️ 删除
-                    </button>
-                  </div>
-                </div>
-
-                {/* 用户原始输入 */}
-                <div className="bg-notion-bg rounded-md p-3 text-sm space-y-2">
-                  <p><span className="font-medium">今日工作：</span>{selectedEntry.today_work}</p>
-                  <p><span className="font-medium">学习内容：</span>{selectedEntry.learn_content}</p>
-                  <p><span className="font-medium">发现问题：</span>{selectedEntry.problems}</p>
-                  <p><span className="font-medium">思考：</span>{selectedEntry.thinking}</p>
-                </div>
-
-                {/* 生成内容 */}
-                <div className="space-y-3">
-                  <div className="bg-blue-50 rounded-md p-4">
-                    <h4 className="text-sm font-medium text-notion-accent mb-2">实习内容</h4>
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{selectedEntry.generated_content}</p>
-                  </div>
-                  <div className="bg-green-50 rounded-md p-4">
-                    <h4 className="text-sm font-medium text-green-700 mb-2">实习体会和感受</h4>
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{selectedEntry.generated_feelings}</p>
-                  </div>
-                  <div className="bg-purple-50 rounded-md p-4">
-                    <h4 className="text-sm font-medium text-purple-700 mb-2">其他</h4>
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{selectedEntry.generated_other}</p>
-                  </div>
-                </div>
+      {/* 详情 — 阅读状态 */}
+      {selectedEntry && (
+        <div className="fixed inset-0 z-50 bg-base-bg/60 backdrop-blur-[2px] flex items-start justify-center overflow-y-auto" onClick={() => setSelectedEntry(null)}>
+          <div
+            className="bg-base-surface w-full max-w-[620px] my-10 mx-4 rounded-[16px] p-8 md:p-10 shadow-soft animate-fadeIn"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* 头部 */}
+            <div className="flex items-start justify-between mb-8">
+              <div>
+                <div className="text-[20px] font-medium text-base-text">{selectedEntry.date}</div>
+                <div className="text-[13px] text-base-muted mt-1">{selectedEntry.position}</div>
               </div>
-            ) : (
-              <div className="bg-notion-card rounded-lg border border-notion-border p-12 text-center text-notion-text-secondary">
-                <p className="text-4xl mb-4">👆</p>
-                <p>从左侧选择一篇日记查看详情</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleDownload(selectedEntry)}
+                  className="px-3.5 py-1.5 rounded-[10px] border border-base-line text-[12px] text-base-secondary hover:bg-base-bg transition-colors"
+                >
+                  下载 Word
+                </button>
+                <button
+                  onClick={() => handleDelete(selectedEntry.id)}
+                  disabled={deleting === selectedEntry.id}
+                  className="px-3.5 py-1.5 rounded-[10px] text-[12px] text-base-muted hover:text-red-500 transition-colors disabled:opacity-50"
+                >
+                  删除
+                </button>
               </div>
-            )}
+            </div>
+
+            {/* 正文 */}
+            <div className="space-y-8">
+              <section>
+                <h4 className="text-[12px] font-medium text-base-muted mb-2.5 tracking-wide">今天</h4>
+                <p className="text-[14px] leading-[1.9] text-base-text whitespace-pre-wrap">{selectedEntry.content}</p>
+              </section>
+              {selectedEntry.feelings && (
+                <>
+                  <div className="border-t border-base-line/70" />
+                  <section>
+                    <h4 className="text-[12px] font-medium text-base-muted mb-2.5 tracking-wide">收获</h4>
+                    <p className="text-[14px] leading-[1.9] text-base-text whitespace-pre-wrap">{selectedEntry.feelings}</p>
+                  </section>
+                </>
+              )}
+              {selectedEntry.other && (
+                <>
+                  <div className="border-t border-base-line/70" />
+                  <section>
+                    <h4 className="text-[12px] font-medium text-base-muted mb-2.5 tracking-wide">值得记住的</h4>
+                    <p className="text-[14px] leading-[1.9] text-base-text whitespace-pre-wrap">{selectedEntry.other}</p>
+                  </section>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}

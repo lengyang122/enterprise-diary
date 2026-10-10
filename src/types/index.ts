@@ -18,33 +18,21 @@ export interface Profile {
 // === 日记条目 ===
 export interface DiaryEntry {
   id: string
-  profile_id: string
-  date: string          // 日期 "7.17"
-  position: string      // 实习岗位（默认 PQE）
-  
-  // 用户输入
-  today_work: string    // 今日工作
-  learn_content: string // 学习内容
-  problems: string      // 发现问题
-  thinking: string      // 思考
-  
-  // AI 生成
-  generated_content: string   // 实习内容
-  generated_feelings: string  // 实习体会和感受
-  generated_other: string     // 其他
-  
+  date: string
+  position: string
+  content: string       // 实习内容
+  feelings: string      // 实习体会和感受
+  other: string         // 其他
   created_at: string
-  updated_at: string
 }
 
-// === 表单输入（用户每天填写的） ===
+// === 表单输入（用户每天填写的三个模块） ===
 export interface DiaryFormInput {
   date: string
   position: string
-  today_work: string
-  learn_content: string
-  problems: string
-  thinking: string
+  content: string    // 实习内容（原始草稿）
+  feelings: string   // 实习体会和感受（原始草稿）
+  other: string      // 其他（原始草稿）
 }
 
 // === AI 生成结果 ===
