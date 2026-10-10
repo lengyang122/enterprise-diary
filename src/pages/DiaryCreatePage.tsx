@@ -240,9 +240,9 @@ export default function DiaryCreatePage() {
   if (generating) {
     return (
       <div className="min-h-[62vh] flex items-center justify-center animate-fadeIn">
-        {/* 这里没有可选内容，禁用文本选择并把光标锁成默认箭头，
+        {/* 这里没有可选内容：禁用文本选择并换成忙碌光标，
             否则鼠标移上去会变成 I 形文字光标，看起来像页面上多了个游标 */}
-        <div className="glass rounded-glass-lg px-12 py-10 text-center cursor-default select-none">
+        <div className="glass rounded-glass-lg px-12 py-10 text-center cursor-progress select-none">
           <div className="flex items-center justify-center gap-1.5 mb-5">
             {[0, 1, 2].map(i => (
               <span
