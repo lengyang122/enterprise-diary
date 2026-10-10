@@ -1,0 +1,10 @@
+# 统一换行为 LF，避免 Windows(core.autocrlf=true) 下的 CRLF 噪声
+* text=auto eol=lf
+
+# 二进制资源不做换行转换
+*.docx binary
+*.xlsx binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.ico  binary

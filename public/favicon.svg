@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="企业实践日记">
+  <rect width="32" height="32" rx="7" fill="#6C6FD5" />
+  <path
+    d="M10.5 8h8.2l3.8 3.8V23a1 1 0 0 1-1 1H10.5a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"
+    fill="none"
+    stroke="#FFFFFF"
+    stroke-width="1.7"
+    stroke-linejoin="round"
+  />
+  <path d="M18.7 8v4.1h3.8" fill="none" stroke="#FFFFFF" stroke-width="1.7" stroke-linejoin="round" />
+  <path
+    d="M12.8 17.2h7M12.8 20.6h4.4"
+    stroke="#FFFFFF"
+    stroke-width="1.5"
+    stroke-linecap="round"
+  />
+</svg>

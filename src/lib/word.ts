@@ -2,20 +2,12 @@
 import { saveAs } from 'file-saver'
 import JSZip from 'jszip'
 import { TEMPLATE_BASE64 } from './templateData'
+import { countHanzi } from './text'
 import type { DiaryWordData } from '../types'
 
 // === 工具函数 ===
 
-function countHanzi(text: string): number {
-  let count = 0
-  for (let i = 0; i < text.length; i++) {
-    const code = text.charCodeAt(i)
-    if (code >= 0x4E00 && code <= 0x9FFF) count++
-  }
-  return count
-}
-
-function safeText(text: string, max = 80): string {
+export function safeText(text: string, max = 80): string {
   let count = 0
   for (let i = 0; i < text.length; i++) {
     const code = text.charCodeAt(i)
@@ -41,7 +33,7 @@ interface WrBlock {
   text: string       // <w:t> 内的文本
 }
 
-function replaceInXml(xml: string, oldText: string, newText: string): string {
+export function replaceInXml(xml: string, oldText: string, newText: string): string {
   if (!oldText) return xml
 
   // 匹配每个完整的 <w:r>...</w:r> 块（非贪婪，排除 <w:rPr>）

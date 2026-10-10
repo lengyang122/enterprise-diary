@@ -29,11 +29,11 @@ export default function HistoryPage() {
     setLoading(true)
     try {
       const prof = await getProfile()
-      if (prof) setProfile(prof as unknown as Profile)
+      if (prof) setProfile(prof)
     } catch { /* ignore */ }
     try {
       const diaryData = await getDiaries()
-      if (diaryData) setEntries(diaryData as unknown as DiaryEntry[])
+      if (diaryData) setEntries(diaryData)
     } catch { /* ignore */ }
     setLoading(false)
   }

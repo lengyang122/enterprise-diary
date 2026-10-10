@@ -45,7 +45,7 @@ export default function DiaryCreatePage() {
   async function loadProfile() {
     try {
       const data = await getProfile()
-      if (data) setProfile(data as unknown as Profile)
+      if (data) setProfile(data)
     } catch {
       // 忽略
     }

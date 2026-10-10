@@ -6,7 +6,6 @@ import type { Profile } from '../types'
 // 创建默认 profile 对象
 function createEmptyProfile(): Profile {
   return {
-    id: '',
     name: '',
     student_id: '',
     class_name: '',
@@ -17,8 +16,6 @@ function createEmptyProfile(): Profile {
     company_teacher: '陶凯',
     start_date: '',
     end_date: '',
-    created_at: '',
-    updated_at: '',
   }
 }
 
@@ -39,11 +36,7 @@ export default function SettingsPage() {
     setLoading(true)
     try {
       const data = await getProfile()
-      if (data) {
-        setProfile(data as unknown as Profile)
-      } else {
-        setProfile(createEmptyProfile())
-      }
+      setProfile(data ?? createEmptyProfile())
     } catch {
       setProfile(createEmptyProfile())
     }
@@ -76,10 +69,10 @@ export default function SettingsPage() {
       }
 
       console.log('[Settings] Saving profile')
-      const saved = await saveProfile(cleanData)
+      const persisted = await saveProfile(cleanData)
 
       console.log('[Settings] Save success')
-      setProfile(saved as unknown as Profile)
+      setProfile(persisted)
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
 
