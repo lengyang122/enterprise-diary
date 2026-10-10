@@ -311,6 +311,15 @@ button:focus {
   .chip-glass:active {
     transform: scale(0.95);
   }
+
+  /* 按钮与标签不是可选文本：避免拖动时误选，也避免鼠标移上去出现 I 形文字光标 */
+  .btn-primary,
+  .btn-glass,
+  .btn-quiet,
+  .chip,
+  .chip-glass {
+    user-select: none;
+  }
 }
 
 /* ============================================================

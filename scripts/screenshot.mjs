@@ -77,6 +77,10 @@ const SEED_DIARIES = `localStorage.setItem('enterprise-diary-entries', ${JSON.st
 const SEED_AI_CONFIG = `localStorage.setItem('enterprise-diary-ai-config', ${JSON.stringify(
   JSON.stringify({ apiKey: 'sk-demo-key-for-screenshot', apiUrl: 'https://api.deepseek.com/v1/chat/completions', model: 'deepseek-v4-flash' })
 )})`
+// 指向不可路由地址，让请求一直挂起，以便稳定截取「生成中」状态
+const SEED_AI_CONFIG_HANGING = `localStorage.setItem('enterprise-diary-ai-config', ${JSON.stringify(
+  JSON.stringify({ apiKey: 'sk-demo-key-for-screenshot', apiUrl: 'http://10.255.255.1/v1/chat/completions', model: 'demo' })
+)})`
 const SEED_DRAFT_INPUT = `localStorage.setItem('enterprise-diary-draft', ${JSON.stringify(
   JSON.stringify({
     form: {
@@ -123,6 +127,16 @@ const SCENARIOS = [
     },
   },
   { name: '03-today-result', route: '/', seed: [SEED_PROFILE, SEED_AI_CONFIG, SEED_DRAFT_RESULT] },
+  {
+    // 「生成中」加载态：API 指向不可路由地址，请求会一直挂起
+    name: '03b-today-generating',
+    route: '/',
+    seed: [SEED_PROFILE, SEED_AI_CONFIG_HANGING, SEED_DRAFT_INPUT],
+    action: async page => {
+      await page.getByRole('button', { name: /整理今天/ }).click()
+      await page.waitForTimeout(1500)
+    },
+  },
   {
     name: '04-history-list',
     route: '/history',
