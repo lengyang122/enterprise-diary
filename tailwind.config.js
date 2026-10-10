@@ -4,14 +4,29 @@ export default {
   theme: {
     extend: {
       fontFamily: {
+        // 拉丁与中文分开选：
+        //   苹果设备 → -apple-system 给到 SF Pro，中文由 PingFang 接管
+        //   Windows  → -apple-system / SF Pro 不存在，拉丁落到 Segoe UI Variable（可变字重），
+        //              中文继续回落到 PingFang SC（苹方）
+        // 注意顺序：Segoe 系列不含中日韩字形，所以不会抢走中文；反过来若把 PingFang 提前，
+        // 拉丁也会用苹方的拉丁字形（只有一个字重，粗细无层次）。
         sans: [
           '-apple-system',
           'BlinkMacSystemFont',
           '"SF Pro Text"',
-          '"PingFang SC"',
-          '"Microsoft YaHei"',
+          '"SF Pro Display"',
+          '"Segoe UI Variable Text"',
+          '"Segoe UI Variable Display"',
+          '"Segoe UI Variable"',
           '"Segoe UI"',
-          'Roboto',
+          '"PingFang SC"',
+          '"Hiragino Sans GB"',
+          '"Noto Sans SC"',
+          '"Microsoft YaHei UI"',
+          '"Microsoft YaHei"',
+          '"Helvetica Neue"',
+          'Helvetica',
+          'Arial',
           'sans-serif',
         ],
       },
