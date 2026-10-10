@@ -129,6 +129,80 @@ describe('DiaryCreatePage 顶部文案', () => {
   })
 })
 
+describe('DiaryCreatePage 岗位选择器', () => {
+  beforeEach(() => localStorage.clear())
+  afterEach(() => cleanup())
+
+  it('点击岗位胶囊打开自绘下拉并列出全部预设', async () => {
+    render(<DiaryCreatePage />)
+    await screen.findByText('今天发生了什么？')
+
+    fireEvent.click(screen.getByTitle('点击选择岗位'))
+
+    expect(screen.getByPlaceholderText('输入或选择岗位')).toBeTruthy()
+    expect(screen.getByText('SQE')).toBeTruthy()
+    expect(screen.getByText('工艺工程师')).toBeTruthy()
+  })
+
+  it('不使用原生 datalist（弹出层必须可控）', async () => {
+    render(<DiaryCreatePage />)
+    await screen.findByText('今天发生了什么？')
+
+    fireEvent.click(screen.getByTitle('点击选择岗位'))
+
+    expect(document.querySelector('datalist')).toBeNull()
+    expect(document.querySelector('option')).toBeNull()
+  })
+
+  it('选择预设后写入胶囊并关闭下拉', async () => {
+    render(<DiaryCreatePage />)
+    await screen.findByText('今天发生了什么？')
+
+    fireEvent.click(screen.getByTitle('点击选择岗位'))
+    fireEvent.click(screen.getByText('SQE'))
+
+    expect(screen.queryByPlaceholderText('输入或选择岗位')).toBeNull()
+    expect(screen.getByTitle('点击选择岗位').textContent).toBe('SQE')
+  })
+
+  it('输入自定义岗位后回车即可使用', async () => {
+    render(<DiaryCreatePage />)
+    await screen.findByText('今天发生了什么？')
+
+    fireEvent.click(screen.getByTitle('点击选择岗位'))
+    const input = screen.getByPlaceholderText('输入或选择岗位')
+    fireEvent.change(input, { target: { value: '可靠性工程师' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    expect(screen.getByTitle('点击选择岗位').textContent).toBe('可靠性工程师')
+  })
+
+  it('输入关键词会筛选预设', async () => {
+    render(<DiaryCreatePage />)
+    await screen.findByText('今天发生了什么？')
+
+    fireEvent.click(screen.getByTitle('点击选择岗位'))
+    fireEvent.change(screen.getByPlaceholderText('输入或选择岗位'), { target: { value: '工程' } })
+
+    expect(screen.getByText('工艺工程师')).toBeTruthy()
+    expect(screen.getByText('设备工程师')).toBeTruthy()
+    expect(screen.queryByText('SQE')).toBeNull()
+  })
+
+  it('按 Esc 关闭下拉且不改动岗位', async () => {
+    render(<DiaryCreatePage />)
+    await screen.findByText('今天发生了什么？')
+
+    fireEvent.click(screen.getByTitle('点击选择岗位'))
+    expect(screen.getByPlaceholderText('输入或选择岗位')).toBeTruthy()
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    expect(screen.queryByPlaceholderText('输入或选择岗位')).toBeNull()
+    expect(screen.getByTitle('点击选择岗位').textContent).toBe('PQE')
+  })
+})
+
 describe('DiaryCreatePage 导出行为', () => {
   beforeEach(() => {
     localStorage.clear()

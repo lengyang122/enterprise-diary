@@ -112,6 +112,16 @@ const MOBILE_TALL = { width: 390, height: 1400 }
 const SCENARIOS = [
   { name: '01-today-empty', route: '/', seed: [SEED_PROFILE, SEED_AI_CONFIG] },
   { name: '02-today-draft', route: '/', seed: [SEED_PROFILE, SEED_AI_CONFIG, SEED_DRAFT_INPUT] },
+  {
+    // 岗位选择器展开态（自绘玻璃下拉，不是原生 datalist）
+    name: '02b-today-position-picker',
+    route: '/',
+    seed: [SEED_PROFILE, SEED_AI_CONFIG],
+    action: async page => {
+      await page.getByTitle('点击选择岗位').click()
+      await page.waitForTimeout(400)
+    },
+  },
   { name: '03-today-result', route: '/', seed: [SEED_PROFILE, SEED_AI_CONFIG, SEED_DRAFT_RESULT] },
   {
     name: '04-history-list',

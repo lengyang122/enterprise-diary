@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { generateDiaryContent, regenerateSection } from '../lib/ai'
 import { downloadWord, checkExportData, describeExportCheck } from '../lib/word'
 import { getProfile, insertDiary, getDraft, saveDraft, clearDraft } from '../lib/storage'
@@ -347,12 +347,15 @@ export default function DiaryCreatePage() {
         onDismissNotice={() => setRestored(false)}
       />
 
-      {/* 顶栏 */}
-      <div className="glass rounded-glass-lg flex items-center justify-between gap-4 px-5 py-3.5 mb-3.5">
+      {/* 顶栏 —— z-20 是必需的：
+          .glass 的 backdrop-filter 会创建层叠上下文，下面的输入卡同样是独立上下文且
+          z-index 为 auto，于是整张卡会按 DOM 顺序画在顶栏之上，把岗位下拉盖住。
+          给顶栏提级，才能让弹出层真正浮在最上面。 */}
+      <div className="glass rounded-glass-lg relative z-20 flex items-center justify-between gap-4 px-5 py-3.5 mb-3.5">
         <h2 className="text-[19px] font-bold text-ink tracking-tight">今天</h2>
         <div className="flex items-center gap-2">
           <EditableChip value={form.date} onChange={v => setForm(f => ({ ...f, date: v }))} />
-          <EditableChip
+          <PositionPicker
             value={form.position}
             options={POSITION_PRESETS}
             onChange={v => {
@@ -447,15 +450,13 @@ function PromptArea({
   )
 }
 
-// 可编辑胶囊：点击后变为输入框，回车/失焦保存
+// 可编辑胶囊（日期等自由文本）：点击后变为输入框，回车/失焦保存
 function EditableChip({
   value,
   onChange,
-  options,
 }: {
   value: string
   onChange: (v: string) => void
-  options?: string[]
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(value)
@@ -473,28 +474,18 @@ function EditableChip({
 
   if (editing) {
     return (
-      <>
-        <input
-          autoFocus
-          type="text"
-          list={options ? 'position-presets' : undefined}
-          value={draft}
-          onChange={e => setDraft(e.target.value)}
-          onBlur={commit}
-          onKeyDown={e => {
-            if (e.key === 'Enter') commit()
-            if (e.key === 'Escape') setEditing(false)
-          }}
-          className="w-28 px-3.5 py-1.5 text-center text-[13px] text-ink bg-white/85 border border-accent rounded-full shadow-glass-sm"
-        />
-        {options && (
-          <datalist id="position-presets">
-            {options.map(o => (
-              <option key={o} value={o} />
-            ))}
-          </datalist>
-        )}
-      </>
+      <input
+        autoFocus
+        type="text"
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => {
+          if (e.key === 'Enter') commit()
+          if (e.key === 'Escape') setEditing(false)
+        }}
+        className="w-24 px-3.5 py-1.5 text-center text-[13px] text-ink bg-white/85 border border-accent rounded-full shadow-glass-sm"
+      />
     )
   }
 
@@ -502,6 +493,102 @@ function EditableChip({
     <button onClick={startEdit} className="chip chip-glass" title="点击修改">
       {value}
     </button>
+  )
+}
+
+// 岗位选择器：自绘玻璃下拉。
+// 不用原生 <datalist> —— 它的弹出层是浏览器默认样式，既无法定制，
+// 又会以系统样式浮在玻璃界面之上，位置也不受控。
+function PositionPicker({
+  value,
+  options,
+  onChange,
+}: {
+  value: string
+  options: string[]
+  onChange: (v: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState(value)
+  const boxRef = useRef<HTMLDivElement>(null)
+
+  // 打开时输入框留空 —— 这样能直接看到全部预设；输入才做筛选
+  function openPicker() {
+    setDraft('')
+    setOpen(true)
+  }
+
+  function commit(next?: string) {
+    const v = (next ?? draft).trim()
+    if (v) onChange(v)
+    setOpen(false)
+  }
+
+  // 点击外部或按 Esc 关闭
+  useEffect(() => {
+    if (!open) return
+    function onPointerDown(e: MouseEvent) {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onPointerDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  const keyword = draft.trim().toLowerCase()
+  const filtered = keyword ? options.filter(o => o.toLowerCase().includes(keyword)) : options
+
+  return (
+    <div className="relative" ref={boxRef}>
+      <button onClick={openPicker} className="chip chip-glass" title="点击选择岗位">
+        {value}
+      </button>
+
+      {open && (
+        // 弹出层比普通玻璃更实：它悬在正文之上，太透会让底下的文字透上来，列表读不清
+        <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[232px] rounded-glass bg-white/90 border border-white/90 p-2 shadow-glass-lift animate-popIn backdrop-blur-2xl backdrop-saturate-150">
+          <input
+            autoFocus
+            type="text"
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') commit()
+            }}
+            placeholder="输入或选择岗位"
+            className="w-full px-3 py-2 mb-1.5 rounded-[10px] bg-white/80 border border-white text-[13px] text-ink placeholder:text-ink-tertiary"
+          />
+
+          <div className="max-h-[216px] overflow-y-auto">
+            {filtered.length === 0 ? (
+              <p className="px-3 py-2.5 text-[12px] text-ink-tertiary leading-relaxed">
+                没有匹配的预设，回车可直接使用「{draft.trim()}」
+              </p>
+            ) : (
+              filtered.map(o => (
+                <button
+                  key={o}
+                  onClick={() => commit(o)}
+                  className={`w-full text-left px-3 py-2 rounded-[10px] text-[13px] transition-colors duration-200 ${
+                    o === value
+                      ? 'bg-accent-soft text-accent font-semibold'
+                      : 'text-ink-secondary hover:bg-white hover:text-ink'
+                  }`}
+                >
+                  {o}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 
