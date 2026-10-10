@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/re
 import DiaryCreatePage from './DiaryCreatePage'
 import { downloadWord } from '../lib/word'
 import { EMPTY_PROFILE } from '../lib/storage'
+import { QUOTES } from '../lib/quotes'
 
 // 隔离 AI 依赖；word 只替换下载动作，保留 checkExportData / describeExportCheck 的真实实现
 vi.mock('../lib/ai', () => ({ generateDiaryContent: vi.fn() }))
@@ -86,11 +87,44 @@ describe('DiaryCreatePage 草稿行为', () => {
     )
   })
 
-  it('恢复提示可关闭', async () => {
+  it('恢复提示可手动关闭', async () => {
     seedDraft('内容')
 
     render(<DiaryCreatePage />)
-    fireEvent.click(await screen.findByText('知道了'))
+    expect(await screen.findByText('已恢复上次未完成的草稿')).toBeTruthy()
+
+    fireEvent.click(screen.getByLabelText('关闭'))
+    expect(screen.queryByText('已恢复上次未完成的草稿')).toBeNull()
+  })
+})
+
+describe('DiaryCreatePage 顶部文案', () => {
+  beforeEach(() => localStorage.clear())
+  afterEach(() => cleanup())
+
+  it('顶部展示随机文案与出处', async () => {
+    render(<DiaryCreatePage />)
+    await screen.findByText('今天发生了什么？')
+
+    const shown = QUOTES.filter(q => screen.queryByText(q.text))
+    expect(shown).toHaveLength(1)
+    expect(screen.getByText(`— ${shown[0].author}`)).toBeTruthy()
+  })
+
+  it('点「换一句」会换成另一条', async () => {
+    render(<DiaryCreatePage />)
+    await screen.findByText('今天发生了什么？')
+
+    const before = QUOTES.find(q => screen.queryByText(q.text))!
+    fireEvent.click(screen.getByLabelText('换一句'))
+    const after = QUOTES.find(q => screen.queryByText(q.text))!
+
+    expect(after.text).not.toBe(before.text)
+  })
+
+  it('没有草稿时不显示恢复提示', async () => {
+    render(<DiaryCreatePage />)
+    await screen.findByText('今天发生了什么？')
     expect(screen.queryByText('已恢复上次未完成的草稿')).toBeNull()
   })
 })

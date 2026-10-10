@@ -4,6 +4,7 @@ import { downloadWord, checkExportData, describeExportCheck } from '../lib/word'
 import { getProfile, insertDiary, getDraft, saveDraft, clearDraft } from '../lib/storage'
 import { evaluateSections, type SectionKey, type SectionQuality } from '../lib/text'
 import { PlusIcon, RefreshIcon, DownloadIcon } from '../components/icons'
+import QuoteCard from '../components/QuoteCard'
 import type { Profile, DiaryFormInput, AIGeneratedResult, DiaryWordData } from '../types'
 
 // 岗位持久化：记住上次设置的岗位（帮同学写日记时不用反复改）
@@ -98,6 +99,13 @@ export default function DiaryCreatePage() {
     }, 600)
     return () => clearTimeout(timer)
   }, [ready, form, aiResult])
+
+  // 草稿恢复提示 4 秒后自动收起
+  useEffect(() => {
+    if (!restored) return
+    const timer = setTimeout(() => setRestored(false), 4000)
+    return () => clearTimeout(timer)
+  }, [restored])
 
   function formatDate(d: Date): string {
     const month = d.getMonth() + 1
@@ -255,8 +263,6 @@ export default function DiaryCreatePage() {
 
     return (
       <div className="animate-riseIn">
-        {restored && <RestoreNotice onDismiss={() => setRestored(false)} />}
-
         {/* 顶栏 */}
         <div className="glass rounded-glass-lg flex items-center justify-between gap-4 px-5 py-3.5 mb-3.5">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -335,7 +341,11 @@ export default function DiaryCreatePage() {
   // === 输入状态 ===
   return (
     <div className="animate-riseIn">
-      {restored && <RestoreNotice onDismiss={() => setRestored(false)} />}
+      {/* 随机文案（草稿恢复提示内联在这里） */}
+      <QuoteCard
+        notice={restored ? '已恢复上次未完成的草稿' : undefined}
+        onDismissNotice={() => setRestored(false)}
+      />
 
       {/* 顶栏 */}
       <div className="glass rounded-glass-lg flex items-center justify-between gap-4 px-5 py-3.5 mb-3.5">
@@ -535,18 +545,6 @@ function ResultSection({
       </div>
       <p className="text-[14.5px] leading-[1.95] text-ink whitespace-pre-wrap">{text}</p>
     </section>
-  )
-}
-
-// 草稿恢复提示
-function RestoreNotice({ onDismiss }: { onDismiss: () => void }) {
-  return (
-    <div className="glass rounded-glass flex items-center justify-between gap-4 px-4 py-2.5 mb-3.5 animate-fadeIn">
-      <p className="text-[12.5px] text-ink-secondary">已恢复上次未完成的草稿</p>
-      <button onClick={onDismiss} className="btn-quiet text-[12.5px]">
-        知道了
-      </button>
-    </div>
   )
 }
 
