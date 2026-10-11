@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>输入态 / 结果态 改版方案</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1400px; background: #fff; }
+  body { -webkit-font-smoothing: antialiased; color: #1c1c1e;
+         font-family: -apple-system, "Segoe UI Variable Text", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+
+  .wrap { display: grid; grid-template-columns: 1fr 1.15fr 1.15fr; gap: 16px; padding: 18px; }
+  .head { margin-bottom: 10px; padding-left: 2px; }
+  .head b { font-size: 14px; display: block; }
+  .head span { font-size: 11.5px; color: #6b7280; display: block; margin-top: 3px; line-height: 1.6; }
+
+  .stage { position: relative; height: 560px; border-radius: 16px; overflow: hidden;
+           border: 1px solid rgba(0,0,0,.08); }
+
+  .mesh { position: absolute; inset: 0; }
+  .mesh i { position: absolute; display: block; border-radius: 50%; filter: blur(90px); }
+
+  .glass {
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,.72);
+    background: rgba(255,255,255,.38);
+    -webkit-backdrop-filter: blur(6px) saturate(170%);
+    backdrop-filter: blur(6px) saturate(170%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.9), inset 0 -1px 0 rgba(255,255,255,.28),
+                0 10px 40px -14px rgba(28,38,64,.24);
+  }
+
+  /* 背景：A 用现状的柔和版，B/C 用提高饱和度的版本 */
+  .soft .stage { background: linear-gradient(145deg,#d3e0f0 0%,#e2e9f4 38%,#eae3da 72%,#dfe8f0 100%); }
+  .soft .mesh i:nth-child(1) { width: 620px; height: 620px; background: #6d9ad6; opacity: .9; top: -260px; left: -200px; }
+  .soft .mesh i:nth-child(2) { width: 560px; height: 560px; background: #a89bdc; opacity: .9; top: -230px; right: -170px; }
+  .soft .mesh i:nth-child(3) { width: 600px; height: 600px; background: #6fc0c4; opacity: .9; bottom: -300px; left: 90px; }
+  .soft .mesh i:nth-child(4) { width: 520px; height: 520px; background: #d8bc9c; opacity: .9; bottom: -250px; right: 10px; }
+
+  .vivid .stage { background: linear-gradient(145deg,#cfe0f2 0%,#e2e9f4 38%,#eae3da 72%,#dfe8f0 100%); }
+  .vivid .mesh i:nth-child(1) { width: 620px; height: 620px; background: #3d84e0; opacity: .92; top: -260px; left: -200px; }
+  .vivid .mesh i:nth-child(2) { width: 560px; height: 560px; background: #9181e6; opacity: .92; top: -230px; right: -170px; }
+  .vivid .mesh i:nth-child(3) { width: 600px; height: 600px; background: #35c2c9; opacity: .92; bottom: -300px; left: 90px; }
+  .vivid .mesh i:nth-child(4) { width: 520px; height: 520px; background: #d8a765; opacity: .92; bottom: -250px; right: 10px; }
+
+  /* ===== A：现状输入态 ===== */
+  .sideA { position: absolute; left: 12px; top: 12px; bottom: 12px; width: 150px; padding: 14px 12px; }
+  .sideA .brand { font-size: 12px; font-weight: 600; }
+  .sideA .sub { font-size: 9.5px; color: #9aa3af; margin-top: 3px; }
+  .sideA .nav { margin-top: 16px; display: grid; gap: 3px; }
+  .sideA .nav span { font-size: 11px; padding: 7px 9px; border-radius: 9px; color: #6b7280; }
+  .sideA .nav .on { background: rgba(255,255,255,.7); color: #1c1c1e; font-weight: 600; }
+
+  .contentA { position: absolute; left: 174px; right: 12px; top: 12px; }
+  .topbar { padding: 10px 14px; display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 8px; }
+  .topbar .t { font-size: 15px; font-weight: 700; }
+  .topbar .chips { position: absolute; right: 14px; display: flex; gap: 5px; }
+  .chip { font-size: 10px; padding: 4px 10px; border-radius: 999px;
+          background: rgba(255,255,255,.62); border: 1px solid rgba(255,255,255,.75); color: #4b5563; }
+  .quote { padding: 10px 14px; margin-bottom: 8px; text-align: center; }
+  .quote p { font-size: 11.5px; color: #6b7280; }
+  .quote .a { font-size: 10px; color: #9aa3af; margin-top: 3px; }
+  .area { padding: 12px 14px; margin-bottom: 7px; }
+  .area h4 { font-size: 12.5px; font-weight: 600; text-align: center; margin-bottom: 7px; }
+  .area p { font-size: 11.5px; color: #9aa3af; text-align: center; }
+
+  /* ===== B：提议输入态 —— 抽屉收起，只有文案 + 一个框 ===== */
+  .drawerBtn { position: absolute; left: 18px; top: 18px; width: 40px; height: 40px;
+               display: grid; place-items: center; border-radius: 12px; font-size: 16px; color: #4b5563; }
+  .centerB { position: absolute; left: 24px; right: 24px; top: 104px; }
+  .bigQuote { text-align: center; margin-bottom: 26px; }
+  .bigQuote p { font-size: 15px; color: #4b5563; line-height: 1.7; }
+  .bigQuote .a { font-size: 11.5px; color: #9aa3af; margin-top: 7px; }
+  .oneBox { padding: 16px 18px; }
+  .oneBox .chips { display: flex; gap: 6px; margin-bottom: 11px; }
+  .oneBox .ph { font-size: 13px; color: #9aa3af; line-height: 1.9; }
+  .oneBox .ph b { display: block; font-weight: 600; color: #6b7280; margin-bottom: 4px; }
+  .genBtn { margin: 18px auto 0; display: block; padding: 11px 32px; border-radius: 999px;
+            font-size: 13.5px; font-weight: 600; color: #fff; background: #3b7dd8; border: 0;
+            box-shadow: 0 8px 22px -10px rgba(59,125,216,.9); }
+  .noteB { font-size: 11px; color: #6b7280; text-align: center; margin-top: 12px; }
+
+  /* ===== C：提议结果态 ===== */
+  .centerC { position: absolute; left: 24px; right: 24px; top: 18px; }
+  .resultTop { padding: 11px 16px; display: flex; align-items: center; justify-content: center;
+               position: relative; margin-bottom: 9px; }
+  .resultTop .t { font-size: 15px; font-weight: 700; }
+  .resultTop .chips { position: absolute; right: 16px; display: flex; gap: 5px; }
+  .sec { padding: 12px 16px; margin-bottom: 8px; position: relative; }
+  .sec h4 { font-size: 13px; font-weight: 600; text-align: center; margin-bottom: 7px; }
+  .sec .badge { position: absolute; right: 16px; top: 12px; font-size: 10px; padding: 3px 8px;
+                border-radius: 999px; background: rgba(10,132,255,.16); color: #0a84ff; }
+  .sec p { font-size: 11.5px; line-height: 1.9; color: #374151; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- A 现状 -->
+  <section class="soft">
+    <div class="head"><b>A · 现在的输入态</b><span>侧栏常驻 · 顶栏 + 文案 + 三个输入区</span></div>
+    <div class="stage">
+      <div class="mesh"><i></i><i></i><i></i><i></i></div>
+      <aside class="sideA glass">
+        <div class="brand">企业实践日记</div>
+        <div class="sub">记录每一天的成长</div>
+        <div class="nav"><span class="on">新建日记</span><span>历史记录</span><span>设置</span></div>
+      </aside>
+      <div class="contentA">
+        <div class="topbar glass"><span class="t">今天</span>
+          <span class="chips"><span class="chip">10月11日</span><span class="chip">PQE</span></span></div>
+        <div class="quote glass"><p>学而不思则罔，思而不学则殆。</p><div class="a">— 《论语》</div></div>
+        <div class="area glass"><h4>今天发生了什么？</h4><p>记录几个关键词就好…</p></div>
+        <div class="area glass"><h4>今天有什么收获？</h4><p>例如：第一次接触 5Why 分析…</p></div>
+        <div class="area glass"><h4>还有什么想留下？</h4><p>可留空。临时事项、培训…</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- B 提议：输入态 -->
+  <section class="vivid">
+    <div class="head"><b>B · 提议的输入态</b><span>导航收成抽屉 · 文案在上 · 只有一个框 · 背景高彩度</span></div>
+    <div class="stage">
+      <div class="mesh"><i></i><i></i><i></i><i></i></div>
+      <div class="drawerBtn glass">☰</div>
+      <div class="centerB">
+        <div class="bigQuote">
+          <p>学而不思则罔，思而不学则殆。</p>
+          <div class="a">— 《论语》</div>
+        </div>
+        <div class="oneBox glass">
+          <div class="chips"><span class="chip">10月11日</span><span class="chip">PQE</span></div>
+          <div class="ph"><b>今天发生了什么？</b>随便写，不用讲究分段和措辞。比如：上午产线巡检，贴片机抛料率偏高，跟着师傅做了 5Why 分析…</div>
+        </div>
+        <button class="genBtn">＋ 整理今天</button>
+        <div class="noteB">点一下，AI 会把它整理成规范的三段式日记</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C 提议：结果态 -->
+  <section class="vivid">
+    <div class="head"><b>C · 提议的结果态</b><span>生成后切成三段式 · 导航仍是抽屉</span></div>
+    <div class="stage">
+      <div class="mesh"><i></i><i></i><i></i><i></i></div>
+      <div class="drawerBtn glass">☰</div>
+      <div class="centerC">
+        <div class="resultTop glass"><span class="t">今天</span>
+          <span class="chips"><span class="chip">10月11日</span><span class="chip">PQE</span></span></div>
+        <div class="sec glass"><span class="badge">187 字 · 达标</span>
+          <h4>今天</h4>
+          <p>今天跟着带我的工程师在装配车间熟悉 PQE 的日常巡检流程，主要看两条线的首件确认记录……</p></div>
+        <div class="sec glass"><span class="badge">157 字 · 达标</span>
+          <h4>收获</h4>
+          <p>空闲下来反而有点不踏实。之前每天跟着处理异常、跑产线，虽然累但能明显感觉到自己在参与质量管控的闭环……</p></div>
+        <div class="sec glass"><span class="badge">89 字 · 达标</span>
+          <h4>值得记住的</h4>
+          <p>今天车间整体运行平稳，没有异常反馈，我手头的检验任务也不多……</p></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>
