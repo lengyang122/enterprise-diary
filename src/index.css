@@ -462,6 +462,50 @@ button:focus {
 }
 
 /* ============================================================
+   生成中状态
+   ============================================================ */
+
+/* 在「可视内容区」里垂直居中，而不是在内容流里一个固定高度的盒子里。
+   父容器（.glass-safe-content）上下 padding 不对称（要避让吸顶栏与底部导航），
+   所以这里把它们减掉，居中才是真的居中。 */
+.gen-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(
+    100dvh - 76px - 8rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+  );
+}
+
+@media (min-width: 768px) {
+  .gen-wrap {
+    min-height: calc(100dvh - 0.75rem - 1.5rem);
+  }
+}
+
+/* ============================================================
+   轻提示（「已保存」之类）
+   水平居中；移动端抬高，避开底部导航
+   ============================================================ */
+
+.toast-host {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width: 767px) {
+  .toast-host {
+    bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ============================================================
    进入页（假登录）—— 简约商务
    刻意不复用 .glass：全站玻璃偏「通透轻盈」，这一页要的是干净克制，
    所以单独一套更收敛的表面参数（圆角更小、渐变更淡、饱和度更低）。

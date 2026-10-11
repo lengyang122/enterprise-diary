@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { useState, useEffect, useRef, type FormEvent, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getAIConfig, saveAIConfig, type AIConfig } from '../lib/aiConfig'
@@ -376,11 +377,15 @@ export default function SettingsPage() {
         </section>
       </div>
 
-      {saved && (
-        <div className="fixed bottom-8 right-8 px-5 py-3 rounded-full bg-ink text-white text-[13px] shadow-glass-lift animate-popIn z-50">
-          已保存
-        </div>
-      )}
+      {saved &&
+        createPortal(
+          <div className="toast-host">
+            <div className="px-5 py-3 rounded-full bg-ink text-white text-[13px] shadow-glass-lift animate-popIn">
+              已保存
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   )
 }

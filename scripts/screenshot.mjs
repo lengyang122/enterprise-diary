@@ -167,6 +167,26 @@ const SCENARIOS = [
   },
   { name: '03-today-result', route: '/', seed: [SEED_PROFILE, SEED_AI_CONFIG, SEED_DRAFT_RESULT] },
   {
+    // 保存成功提示：确认水平居中（原先在右下角）
+    name: '03c-today-saved-toast',
+    route: '/',
+    seed: [SEED_PROFILE, SEED_AI_CONFIG, SEED_DRAFT_RESULT],
+    action: async page => {
+      await page.getByRole('button', { name: /保存今天/ }).click()
+      await page.waitForTimeout(600)
+    },
+  },
+  {
+    // 日期选择器：点日期胶囊后应出现 type="date" 输入框
+    name: '02c-today-date-picker',
+    route: '/',
+    seed: [SEED_PROFILE, SEED_AI_CONFIG, SEED_DRAFT_INPUT],
+    action: async page => {
+      await page.getByTitle('点击选择日期').click()
+      await page.waitForTimeout(500)
+    },
+  },
+  {
     // 「生成中」加载态：API 指向不可路由地址，请求会一直挂起
     name: '03b-today-generating',
     route: '/',

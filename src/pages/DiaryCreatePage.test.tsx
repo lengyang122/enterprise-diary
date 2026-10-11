@@ -129,6 +129,39 @@ describe('DiaryCreatePage 顶部文案', () => {
   })
 })
 
+describe('DiaryCreatePage 日期选择器', () => {
+  beforeEach(() => localStorage.clear())
+  afterEach(() => cleanup())
+
+  it('点击日期胶囊打开的是日期选择器，而不是文本输入框', async () => {
+    render(<DiaryCreatePage />)
+    await screen.findByText('今天发生了什么？')
+
+    fireEvent.click(screen.getByTitle('点击选择日期'))
+
+    const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement | null
+    expect(dateInput).toBeTruthy()
+    // 不应再有可自由输入的文本框（文本输入才是用户抱怨的点）
+    expect(document.querySelector('input[type="text"][class*="w-24"]')).toBeNull()
+  })
+
+  it('日期在「9月3日」与选择器的 YYYY-MM-DD 之间双向转换，落库格式不变', async () => {
+    seedDraft('今天的内容')
+    render(<DiaryCreatePage />)
+    await screen.findByText('今天发生了什么？')
+
+    fireEvent.click(screen.getByTitle('点击选择日期'))
+    const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement
+    // 存储里是「9月2日」（见 seedDraft），选择器要收到同一天的 ISO 值
+    expect(dateInput.value).toMatch(/^\d{4}-09-02$/)
+
+    fireEvent.change(dateInput, { target: { value: '2026-10-15' } })
+
+    // 胶囊改回展示格式，说明反向转换也正确
+    expect(screen.getByTitle('点击选择日期').textContent).toBe('10月15日')
+  })
+})
+
 describe('DiaryCreatePage 岗位选择器', () => {
   beforeEach(() => localStorage.clear())
   afterEach(() => cleanup())

@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { useState, useEffect, useRef } from 'react'
 import { generateDiaryContent, regenerateSection } from '../lib/ai'
 import { downloadWord, checkExportData, describeExportCheck } from '../lib/word'
@@ -239,10 +240,10 @@ export default function DiaryCreatePage() {
   // === 生成中状态 ===
   if (generating) {
     return (
-      <div className="min-h-[62vh] flex items-center justify-center animate-fadeIn">
-        {/* 这里没有可选内容：禁用文本选择并换成忙碌光标，
-            否则鼠标移上去会变成 I 形文字光标，看起来像页面上多了个游标 */}
-        <div className="glass rounded-glass-lg px-12 py-10 text-center cursor-progress select-none">
+      <div className="gen-wrap animate-fadeIn">
+        {/* 这里没有可选内容：禁用文本选择，光标锁成普通箭头，
+            避免鼠标移上去出现 I 形文字光标或忙碌光标，看起来像页面上多了个游标 */}
+        <div className="glass rounded-glass-lg px-12 py-10 text-center cursor-default select-none">
           <div className="flex items-center justify-center gap-1.5 mb-5">
             {[0, 1, 2].map(i => (
               <span
@@ -331,11 +332,15 @@ export default function DiaryCreatePage() {
           </div>
         )}
 
-        {saved && (
-          <div className="fixed bottom-8 right-8 px-5 py-3 rounded-full bg-ink text-white text-[13px] shadow-glass-lift animate-popIn z-50">
-            已保存
-          </div>
-        )}
+        {saved &&
+          createPortal(
+            <div className="toast-host">
+              <div className="px-5 py-3 rounded-full bg-ink text-white text-[13px] shadow-glass-lift animate-popIn">
+                已保存
+              </div>
+            </div>,
+            document.body
+          )}
       </div>
     )
   }
@@ -453,6 +458,23 @@ function PromptArea({
 }
 
 // 可编辑胶囊（日期等自由文本）：点击后变为输入框，回车/失焦保存
+// 日期在存储与导出里一直是「9月2日」这种展示格式（Word 文件名也依赖它），
+// 不能改成 ISO。所以只在这里做双向转换，让选择器用 YYYY-MM-DD，落库仍是原格式。
+function labelToDateInput(label: string): string {
+  const now = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const m = label.match(/(\d+)月(\d+)日/)
+  const month = m ? Number(m[1]) : now.getMonth() + 1
+  const day = m ? Number(m[2]) : now.getDate()
+  return `${now.getFullYear()}-${pad(month)}-${pad(day)}`
+}
+
+function dateInputToLabel(iso: string): string {
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!m) return ''
+  return `${Number(m[2])}月${Number(m[3])}日`
+}
+
 function EditableChip({
   value,
   onChange,
@@ -461,38 +483,42 @@ function EditableChip({
   onChange: (v: string) => void
 }) {
   const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(value)
+  const inputRef = useRef<HTMLInputElement>(null)
 
-  function startEdit() {
-    setDraft(value)
-    setEditing(true)
-  }
-
-  function commit() {
-    const v = draft.trim()
-    if (v) onChange(v)
-    setEditing(false)
-  }
+  // 进入编辑态后尝试直接弹出系统日期面板。
+  // showPicker 需要用户手势，不同浏览器支持不一，失败就退回「点日历图标」。
+  useEffect(() => {
+    if (!editing) return
+    try {
+      inputRef.current?.showPicker?.()
+    } catch {
+      /* 忽略：面板没自动弹就手动点一下 */
+    }
+  }, [editing])
 
   if (editing) {
     return (
       <input
+        ref={inputRef}
         autoFocus
-        type="text"
-        value={draft}
-        onChange={e => setDraft(e.target.value)}
-        onBlur={commit}
+        type="date"
+        value={labelToDateInput(value)}
+        onChange={e => {
+          const v = dateInputToLabel(e.target.value)
+          if (v) onChange(v)
+          setEditing(false)
+        }}
+        onBlur={() => setEditing(false)}
         onKeyDown={e => {
-          if (e.key === 'Enter') commit()
           if (e.key === 'Escape') setEditing(false)
         }}
-        className="w-24 px-3.5 py-1.5 text-center text-[13px] text-ink bg-white/85 border border-accent rounded-full shadow-glass-sm"
+        className="px-3 py-1.5 text-[13px] text-ink bg-white/85 border border-accent rounded-full shadow-glass-sm outline-none"
       />
     )
   }
 
   return (
-    <button onClick={startEdit} className="chip chip-glass chip-tap" title="点击修改">
+    <button onClick={() => setEditing(true)} className="chip chip-glass chip-tap" title="点击选择日期">
       {value}
     </button>
   )
