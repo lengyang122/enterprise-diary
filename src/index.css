@@ -527,6 +527,23 @@ button:focus {
   opacity: 0.032;
 }
 
+/* 这一页的文案既不可编辑也不可选中，没有理由显示 I 形文字光标 ——
+   否则鼠标停在文案上时会出现一道竖线，看起来像页面上多了个游标。
+   cursor 是可继承属性：整页锁成箭头，只有输入框单独放开成文字光标。
+   （注意：这改的是光标的「形状」，操作系统画的那个鼠标本身无法用 CSS 隐藏。） */
+.auth-page {
+  cursor: default;
+}
+
+.auth-card {
+  user-select: none;
+}
+
+.auth-field {
+  cursor: text;
+  user-select: text;
+}
+
 /* 卡片：小圆角 + 细磨砂 + 极淡的顶部渐变 */
 .auth-card {
   position: relative;
