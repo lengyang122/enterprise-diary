@@ -118,7 +118,7 @@ button:focus {
   border-radius: 50%;
   filter: blur(96px);
   opacity: 0.82;
-  animation: meshDrift 26s cubic-bezier(0.32, 0.72, 0, 1) infinite alternate;
+  animation: meshBreath 6s ease-in-out infinite alternate;
 }
 
 .glass-mesh i:nth-child(1) {
@@ -134,8 +134,8 @@ button:focus {
   background: #a8b6dc;
   top: -300px;
   right: -200px;
-  animation-duration: 31s;
-  animation-direction: alternate-reverse;
+  animation-duration: 7.5s;
+  animation-delay: -1.8s;
 }
 .glass-mesh i:nth-child(3) {
   width: 880px;
@@ -143,7 +143,8 @@ button:focus {
   background: #7fb2cc;
   bottom: -420px;
   left: 180px;
-  animation-duration: 24s;
+  animation-duration: 5.5s;
+  animation-delay: -3.2s;
 }
 .glass-mesh i:nth-child(4) {
   width: 720px;
@@ -151,16 +152,25 @@ button:focus {
   background: #cdbcaa;
   bottom: -340px;
   right: 40px;
-  animation-duration: 29s;
-  animation-direction: alternate-reverse;
+  animation-duration: 8.5s;
+  animation-delay: -5s;
 }
 
-@keyframes meshDrift {
+/* 全局呼吸：透明度与缩放同步缓慢起伏，四个光斑用不同时长与负延迟错开相位。
+   取值刻意让平均值落在原来的静态值上 ——
+   静态时是 opacity: 0.82，这里 0.66–0.98 的平均正好是 0.82，
+   这样「动起来」的同时，整体明暗与之前完全一致，不会把背景变淡。
+
+   注意与进入页的区别：进入页（.auth-page）用 authBreath 0.26–0.70，
+   是更淡更收敛的一套，见下方。 */
+@keyframes meshBreath {
   0% {
-    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.66;
+    transform: translate3d(0, 0, 0) scale(0.9);
   }
   100% {
-    transform: translate3d(58px, 42px, 0) scale(1.12);
+    opacity: 0.98;
+    transform: translate3d(2.5%, -2.5%, 0) scale(1.1);
   }
 }
 
@@ -550,7 +560,7 @@ button:focus {
    ============================================================ */
 
 /* 进入页的光斑：换成「呼吸」——透明度与缩放同步缓慢起伏。
-   用一个动画同时管 opacity 与 transform，避免与 meshDrift 争抢 transform
+   用一个动画同时管 opacity 与 transform，避免与 meshBreath 争抢 transform
    （两个动画作用于同一属性时，只有后者生效）。
    四个光斑用不同的时长与负延迟错开相位，才不会整齐划一地一起亮一起暗。
 
