@@ -8,9 +8,44 @@ import {
   getDraft,
   saveDraft,
   clearDraft,
+  hasEntered,
+  markEntered,
+  resetEntered,
   EMPTY_PROFILE,
 } from './storage'
 import type { DiaryFormInput } from '../types'
+
+describe('进入标记', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('默认未进入 —— 首次打开会先看到进入页', () => {
+    expect(hasEntered()).toBe(false)
+  })
+
+  it('标记后即为已进入', () => {
+    markEntered()
+    expect(hasEntered()).toBe(true)
+  })
+
+  it('重置后回到未进入状态（设置页「重新观看」用）', () => {
+    markEntered()
+    resetEntered()
+    expect(hasEntered()).toBe(false)
+  })
+
+  it('读不到 localStorage 时视为已进入，避免把用户卡在门口', () => {
+    const orig = globalThis.localStorage
+    // 模拟隐私模式下访问 localStorage 抛异常
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      get() {
+        throw new Error('SecurityError')
+      },
+    })
+    expect(hasEntered()).toBe(true)
+    Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: orig })
+  })
+})
 
 describe('profile 存储', () => {
   beforeEach(() => localStorage.clear())

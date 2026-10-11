@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, type FormEvent, type ChangeEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getAIConfig, saveAIConfig, type AIConfig } from '../lib/aiConfig'
 import { testAIConnection, type ConnectionTestResult } from '../lib/ai'
-import { saveProfile, getProfile, getDiaries } from '../lib/storage'
+import { saveProfile, getProfile, getDiaries, resetEntered } from '../lib/storage'
 import {
   downloadBackup,
   parseBackupFile,
@@ -35,6 +36,7 @@ const inputCls =
   'hover:bg-white/50 focus:bg-white/75 focus:ring-1 focus:ring-accent/40'
 
 export default function SettingsPage() {
+  const navigate = useNavigate()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [aiConfig, setAiConfig] = useState<AIConfig>(getAIConfig())
   const [saving, setSaving] = useState(false)
@@ -49,6 +51,12 @@ export default function SettingsPage() {
   const [backupMsg, setBackupMsg] = useState('')
   const [backupErr, setBackupErr] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // 清掉进入标记并回到进入页。不清除任何日记数据。
+  function handleReplayWelcome() {
+    resetEntered()
+    navigate('/welcome')
+  }
 
   useEffect(() => {
     loadProfile()
@@ -354,6 +362,17 @@ export default function SettingsPage() {
 
           {backupErr && <p className="text-[12.5px] text-danger mt-3 leading-relaxed">{backupErr}</p>}
           {backupMsg && <p className="text-[12.5px] text-ink-secondary mt-3 break-all">{backupMsg}</p>}
+        </section>
+
+        {/* 关于 */}
+        <section className="glass rounded-glass px-5 py-5 md:px-6">
+          <SectionHeader title="关于" desc="这个应用没有账号系统，也没有服务器" />
+          <p className="text-[12.5px] text-ink-secondary leading-relaxed">
+            首次打开时的那个登录页是个玩笑 —— 所有内容都只存在这台设备上。
+          </p>
+          <button onClick={handleReplayWelcome} className="btn-quiet px-0 py-2 mt-3 text-[12.5px] text-accent">
+            重新观看进入页
+          </button>
         </section>
       </div>
 

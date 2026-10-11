@@ -113,7 +113,33 @@ const DESKTOP_TALL = { width: 1280, height: 1500 }
 const MOBILE = { width: 390, height: 844 }
 const MOBILE_TALL = { width: 390, height: 1400 }
 
+// 进入标记：不设的话 / 会先跳到 /welcome
+const SEED_ENTERED = `localStorage.setItem('enterprise-diary-entered', '1')`
+
 const SCENARIOS = [
+  // ===== 首次进入页（假登录）=====
+  { name: '00a-welcome-form', route: '/welcome', skipEntered: true, seed: [] },
+  {
+    name: '00b-welcome-reveal',
+    route: '/welcome',
+    skipEntered: true,
+    seed: [],
+    action: async page => {
+      await page.getByPlaceholder('比如：冷阳').fill('冷阳')
+      await page.getByPlaceholder('比如：PQE 质量工程师').fill('PQE 质量工程师')
+      // exact 精确匹配提交按钮，避免和「登录」标签页撞名
+      await page.getByRole('button', { name: '登 录', exact: true }).click()
+      await page.waitForTimeout(1600)
+    },
+  },
+  {
+    name: '00c-welcome-mobile',
+    route: '/welcome',
+    skipEntered: true,
+    seed: [],
+    viewport: MOBILE,
+  },
+
   { name: '01-today-empty', route: '/', seed: [SEED_PROFILE, SEED_AI_CONFIG] },
   { name: '02-today-draft', route: '/', seed: [SEED_PROFILE, SEED_AI_CONFIG, SEED_DRAFT_INPUT] },
   {
@@ -226,7 +252,10 @@ async function main() {
       viewport: scenario.viewport ?? VIEWPORT[scenario.name] ?? DESKTOP,
       deviceScaleFactor: 2,
     })
-    for (const seed of scenario.seed ?? []) {
+    // 默认标记「已走过进入页」，否则 / 会被重定向到 /welcome。
+    // 进入页自己的场景用 skipEntered 跳过。
+    const seeds = scenario.skipEntered ? [] : [SEED_ENTERED]
+    for (const seed of [...seeds, ...(scenario.seed ?? [])]) {
       await context.addInitScript(seed)
     }
 

@@ -51,6 +51,39 @@ export async function getProfile(): Promise<Profile | null> {
   }
 }
 
+/* ============================================================
+   进入标记
+   首次打开会先经过 /welcome 那个「假登录」页；
+   走过一次就记下标记，之后直接进主页。设置页可以重置重看。
+   ============================================================ */
+
+const ENTERED_KEY = 'enterprise-diary-entered'
+
+export function hasEntered(): boolean {
+  try {
+    return localStorage.getItem(ENTERED_KEY) === '1'
+  } catch {
+    // 隐私模式等禁用 localStorage 的场景：当作已进入，避免把用户卡在门口
+    return true
+  }
+}
+
+export function markEntered(): void {
+  try {
+    localStorage.setItem(ENTERED_KEY, '1')
+  } catch {
+    /* 存不下就存不下，不该因此挡住用户 */
+  }
+}
+
+export function resetEntered(): void {
+  try {
+    localStorage.removeItem(ENTERED_KEY)
+  } catch {
+    /* 同上 */
+  }
+}
+
 export async function saveProfile(data: Profile): Promise<Profile> {
   const clean = normalizeProfile(data as unknown as Record<string, unknown>)
   localStorage.setItem(PROFILE_KEY, JSON.stringify(clean))

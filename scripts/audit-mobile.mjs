@@ -38,6 +38,7 @@ const ROUTES = [
   { path: '/', name: '新建日记' },
   { path: '/history', name: '历史记录' },
   { path: '/settings', name: '设置' },
+  { path: '/welcome', name: '进入页' },
 ]
 
 const browser = await chromium.launch({ executablePath: EDGE })
@@ -50,6 +51,14 @@ for (const d of DEVICES) {
     hasTouch: true,
   })
   const page = await ctx.newPage()
+  // 标记已走过进入页，否则 / 会被重定向到 /welcome，体检就跑偏了
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem('enterprise-diary-entered', '1')
+    } catch {
+      /* ignore */
+    }
+  })
   console.log(`\n${'='.repeat(64)}\n${d.name}  ${d.w}x${d.h} @${d.dpr}x  (底部安全区 ${d.safeBottom}px)\n${'='.repeat(64)}`)
 
   for (const r of ROUTES) {

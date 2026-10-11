@@ -506,4 +506,9 @@ button:focus {
   .nav-item-tap {
     min-height: 44px;
   }
+
+  /* 通用兜底：任何显式标记的控件在触屏上至少 44px 高 */
+  .tap-min {
+    min-height: 44px;
+  }
 }

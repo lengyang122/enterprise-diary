@@ -1,9 +1,19 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import SettingsPage from './SettingsPage'
 import { testAIConnection } from '../lib/ai'
 
 vi.mock('../lib/ai', () => ({ testAIConnection: vi.fn() }))
+
+// 页面里用了 useNavigate（「重新观看进入页」），必须有 Router 包裹
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <SettingsPage />
+    </MemoryRouter>
+  )
+}
 
 describe('SettingsPage 连接自检', () => {
   beforeEach(() => {
@@ -19,7 +29,7 @@ describe('SettingsPage 连接自检', () => {
       latencyMs: 120,
     })
 
-    render(<SettingsPage />)
+    renderPage()
     fireEvent.click(await screen.findByText('测试连接'))
 
     expect(await screen.findByText(/连接正常/)).toBeTruthy()
@@ -31,7 +41,7 @@ describe('SettingsPage 连接自检', () => {
       message: 'AI生成失败：invalid api key',
     })
 
-    render(<SettingsPage />)
+    renderPage()
     fireEvent.click(await screen.findByText('测试连接'))
 
     expect(await screen.findByText(/invalid api key/)).toBeTruthy()
@@ -40,7 +50,7 @@ describe('SettingsPage 连接自检', () => {
   it('测试前会把当前配置落盘，避免测到旧值', async () => {
     vi.mocked(testAIConnection).mockResolvedValue({ ok: true, message: '连接正常' })
 
-    render(<SettingsPage />)
+    renderPage()
     const keyInput = await screen.findByPlaceholderText('sk-...')
     fireEvent.change(keyInput, { target: { value: 'sk-just-typed' } })
     fireEvent.click(screen.getByText('测试连接'))
