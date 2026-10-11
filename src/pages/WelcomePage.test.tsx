@@ -95,10 +95,12 @@ describe('WelcomePage 假登录流程', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '开始记录' }))
 
-    // 进入前会等一次「让正在进入…先画出来」的双 rAF（带 120ms 超时兜底），
-    // 这里把假定时器推过去
+    // 进入前会等一次「让正在进入…先画出来」的双 rAF（带 120ms 超时兜底）。
+    // 必须用 Async 版本：同步的 advanceTimersByTime 会先把定时器推完，
+    // 而此时 enter() 可能还停在 await 微任务上、尚未注册那个定时器
+    // （用同步版本会变成「有时候过、有时候不过」的偶然通过）。
     await act(async () => {
-      vi.advanceTimersByTime(300)
+      await vi.advanceTimersByTimeAsync(300)
     })
 
     await waitFor(async () => {
@@ -140,7 +142,7 @@ describe('WelcomePage 假登录流程', () => {
       fireEvent.click(screen.getByRole('button', { name: '开始记录' }))
 
       await act(async () => {
-        vi.advanceTimersByTime(300)
+        await vi.advanceTimersByTimeAsync(300)
       })
 
       await waitFor(() => {
