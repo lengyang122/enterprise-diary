@@ -26,6 +26,20 @@ body {
   -moz-osx-font-smoothing: grayscale;
   color: #1c1c1e;
   background: transparent;
+  /* 全站默认箭头光标。
+     cursor 是可继承属性，这一条会覆盖浏览器「悬停在文字上显示 I 形光标」的默认行为
+     （那是 cursor: auto 的上下文解析）。理由：这是一个 App 形态的界面，
+     不是文档页面 —— 标题、标签、说明文字上出现 I 形光标，看起来像页面上多了个游标。
+     文字仍然可以正常选中，只是光标形状不跟着变。
+     输入类元素在下面单独放开。 */
+  cursor: default;
+}
+
+/* 只有真正能输入的地方才显示 I 形文字光标 */
+input,
+textarea,
+[contenteditable='true'] {
+  cursor: text;
 }
 
 input,
