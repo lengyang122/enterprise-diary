@@ -119,6 +119,8 @@ button:focus {
   filter: blur(96px);
   opacity: 0.82;
   animation: meshBreath 6s ease-in-out infinite alternate;
+  /* 输入态/结果态切换背景彩度时平滑过渡 */
+  transition: background-color 900ms ease;
 }
 
 .glass-mesh i:nth-child(1) {
@@ -185,6 +187,26 @@ button:focus {
     opacity: 0.78;
     transform: translate3d(6%, -7%, 0) scale(0.94);
   }
+}
+
+/* ============================================================
+   输入态的高彩度背景
+   生成前背景更「有色」，动效明显、也贴合「随手写」的轻松感；
+   生成后回落成默认的柔和版，配合正式的三段式排版。
+   由页面在 <html> 上切换 .bg-vivid，色值过渡由 .glass-mesh i 的 transition 负责。
+   ============================================================ */
+
+.bg-vivid .glass-mesh i:nth-child(1) {
+  background-color: #3d84e0;
+}
+.bg-vivid .glass-mesh i:nth-child(2) {
+  background-color: #9181e6;
+}
+.bg-vivid .glass-mesh i:nth-child(3) {
+  background-color: #35c2c9;
+}
+.bg-vivid .glass-mesh i:nth-child(4) {
+  background-color: #d8a765;
 }
 
 /* ============================================================
@@ -430,36 +452,35 @@ button:focus {
    index.html 里开了 viewport-fit=cover，页面会铺满整个屏幕，
    所以固定定位的元素必须自己避开刘海 / 灵动岛 / Home 指示条。
    env() 在不支持的环境取 0，退化成原来的 0.75rem。 */
-.glass-safe-top {
-  padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));
-  padding-left: calc(0.75rem + env(safe-area-inset-left, 0px));
-  padding-right: calc(0.75rem + env(safe-area-inset-right, 0px));
-}
 
-.glass-safe-bottom {
-  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
-  padding-left: calc(0.75rem + env(safe-area-inset-left, 0px));
-  padding-right: calc(0.75rem + env(safe-area-inset-right, 0px));
-}
-
-/* 桌面端侧边栏：横屏手机上刘海在侧边，固定定位的侧栏必须自己让开 */
+/* 抽屉面板：横屏手机上刘海在侧边，固定定位的面板必须自己让开 */
 .glass-safe-sidebar {
   left: max(0.75rem, env(safe-area-inset-left, 0px));
   top: max(0.75rem, env(safe-area-inset-top, 0px));
   bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
 }
 
-/* 正文区：顶部让开吸顶栏，底部让开底部导航 + Home 指示条 */
+/* 抽屉触发器（左上角常驻按钮） */
+.glass-safe-trigger {
+  left: max(0.75rem, env(safe-area-inset-left, 0px));
+  top: max(0.75rem, env(safe-area-inset-top, 0px));
+}
+
+/* 正文区：顶部让开左上角的抽屉按钮，四周让开安全区。
+   改版后没有吸顶栏与底部导航了，所以上下留白都小了很多。 */
 .glass-safe-content {
-  padding-top: calc(76px + env(safe-area-inset-top, 0px));
-  padding-bottom: calc(8rem + env(safe-area-inset-bottom, 0px));
+  padding-top: calc(4.5rem + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  padding-left: calc(1rem + env(safe-area-inset-left, 0px));
+  padding-right: calc(1rem + env(safe-area-inset-right, 0px));
 }
 
 @media (min-width: 768px) {
-  /* 桌面端没有刘海，也不需要给固定导航留空间 */
   .glass-safe-content {
-    padding-top: 0.75rem;
-    padding-bottom: 1.5rem;
+    padding-top: calc(5.25rem + env(safe-area-inset-top, 0px));
+    padding-bottom: 4rem;
+    padding-left: calc(1.5rem + env(safe-area-inset-left, 0px));
+    padding-right: calc(1.5rem + env(safe-area-inset-right, 0px));
   }
 }
 
@@ -500,9 +521,12 @@ button:focus {
     min-height: 44px;
   }
 
-  /* 通用兜底：任何显式标记的控件在触屏上至少 44px 高 */
+  /* 通用兜底：任何显式标记的控件在触屏上至少 44x44。
+     只写 min-height 会漏掉窄的图标按钮（比如 32×44 的「换一句」），
+     所以宽度也要给下限。 */
   .tap-min {
     min-height: 44px;
+    min-width: 44px;
   }
 }
 
@@ -511,26 +535,25 @@ button:focus {
    ============================================================ */
 
 /* 在「可视内容区」里垂直居中，而不是在内容流里一个固定高度的盒子里。
-   父容器（.glass-safe-content）上下 padding 不对称（要避让吸顶栏与底部导航），
-   所以这里把它们减掉，居中才是真的居中。 */
+   数值要与 .glass-safe-content 的上下 padding 保持一致，居中才是真的居中。 */
 .gen-wrap {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: calc(
-    100dvh - 76px - 8rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+    100dvh - 4.5rem - 4rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
   );
 }
 
 @media (min-width: 768px) {
   .gen-wrap {
-    min-height: calc(100dvh - 0.75rem - 1.5rem);
+    min-height: calc(100dvh - 5.25rem - 4rem);
   }
 }
 
 /* ============================================================
    轻提示（「已保存」之类）
-   水平居中；移动端抬高，避开底部导航
+   水平居中；改版后没有底部导航了，抬高一点避开 Home 指示条即可
    ============================================================ */
 
 .toast-host {
@@ -541,13 +564,7 @@ button:focus {
   display: flex;
   justify-content: center;
   pointer-events: none;
-  bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
-}
-
-@media (max-width: 767px) {
-  .toast-host {
-    bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
-  }
+  bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
 }
 
 /* ============================================================

@@ -36,16 +36,20 @@ describe('DiaryCreatePage 草稿行为', () => {
   beforeEach(() => localStorage.clear())
   afterEach(() => cleanup())
 
-  it('渲染三个草稿输入区', async () => {
+  it('输入态只有一个自由输入框 —— 改版的目标就是「干净」', async () => {
     render(<DiaryCreatePage />)
-    expect(await screen.findByText('今天发生了什么？')).toBeTruthy()
-    expect(screen.getByText('今天有什么收获？')).toBeTruthy()
-    expect(screen.getByText('还有什么想留下？')).toBeTruthy()
+    await screen.findByPlaceholderText(/今天发生了什么？/)
+
+    const textareas = document.querySelectorAll('textarea')
+    expect(textareas).toHaveLength(1)
+    // 日期与岗位仍在，只是并进了这张卡里
+    expect(screen.getByTitle('点击选择日期')).toBeTruthy()
+    expect(screen.getByTitle('点击选择岗位')).toBeTruthy()
   })
 
   it('无草稿时不显示恢复提示', async () => {
     render(<DiaryCreatePage />)
-    await screen.findByText('今天发生了什么？')
+    await screen.findByPlaceholderText(/今天发生了什么？/)
     expect(screen.queryByText('已恢复上次未完成的草稿')).toBeNull()
   })
 
@@ -55,7 +59,7 @@ describe('DiaryCreatePage 草稿行为', () => {
     render(<DiaryCreatePage />)
 
     expect(await screen.findByText('已恢复上次未完成的草稿')).toBeTruthy()
-    const textarea = screen.getByPlaceholderText(/记录几个关键词就好/) as HTMLTextAreaElement
+    const textarea = screen.getByPlaceholderText(/今天发生了什么？/) as HTMLTextAreaElement
     expect(textarea.value).toBe('上次写到一半')
   })
 
@@ -73,7 +77,7 @@ describe('DiaryCreatePage 草稿行为', () => {
 
   it('输入后自动写入草稿', async () => {
     render(<DiaryCreatePage />)
-    const textarea = await screen.findByPlaceholderText(/记录几个关键词就好/)
+    const textarea = await screen.findByPlaceholderText(/今天发生了什么？/)
 
     fireEvent.change(textarea, { target: { value: '今天参加了异常分析会议' } })
 
@@ -104,7 +108,7 @@ describe('DiaryCreatePage 顶部文案', () => {
 
   it('顶部展示随机文案与出处', async () => {
     render(<DiaryCreatePage />)
-    await screen.findByText('今天发生了什么？')
+    await screen.findByPlaceholderText(/今天发生了什么？/)
 
     const shown = QUOTES.filter(q => screen.queryByText(q.text))
     expect(shown).toHaveLength(1)
@@ -113,7 +117,7 @@ describe('DiaryCreatePage 顶部文案', () => {
 
   it('点「换一句」会换成另一条', async () => {
     render(<DiaryCreatePage />)
-    await screen.findByText('今天发生了什么？')
+    await screen.findByPlaceholderText(/今天发生了什么？/)
 
     const before = QUOTES.find(q => screen.queryByText(q.text))!
     fireEvent.click(screen.getByLabelText('换一句'))
@@ -124,7 +128,7 @@ describe('DiaryCreatePage 顶部文案', () => {
 
   it('没有草稿时不显示恢复提示', async () => {
     render(<DiaryCreatePage />)
-    await screen.findByText('今天发生了什么？')
+    await screen.findByPlaceholderText(/今天发生了什么？/)
     expect(screen.queryByText('已恢复上次未完成的草稿')).toBeNull()
   })
 })
@@ -135,7 +139,7 @@ describe('DiaryCreatePage 日期选择器', () => {
 
   it('点击日期胶囊打开的是日期选择器，而不是文本输入框', async () => {
     render(<DiaryCreatePage />)
-    await screen.findByText('今天发生了什么？')
+    await screen.findByPlaceholderText(/今天发生了什么？/)
 
     fireEvent.click(screen.getByTitle('点击选择日期'))
 
@@ -148,7 +152,7 @@ describe('DiaryCreatePage 日期选择器', () => {
   it('日期在「9月3日」与选择器的 YYYY-MM-DD 之间双向转换，落库格式不变', async () => {
     seedDraft('今天的内容')
     render(<DiaryCreatePage />)
-    await screen.findByText('今天发生了什么？')
+    await screen.findByPlaceholderText(/今天发生了什么？/)
 
     fireEvent.click(screen.getByTitle('点击选择日期'))
     const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement
@@ -168,7 +172,7 @@ describe('DiaryCreatePage 岗位选择器', () => {
 
   it('点击岗位胶囊打开自绘下拉并列出全部预设', async () => {
     render(<DiaryCreatePage />)
-    await screen.findByText('今天发生了什么？')
+    await screen.findByPlaceholderText(/今天发生了什么？/)
 
     fireEvent.click(screen.getByTitle('点击选择岗位'))
 
@@ -179,7 +183,7 @@ describe('DiaryCreatePage 岗位选择器', () => {
 
   it('不使用原生 datalist（弹出层必须可控）', async () => {
     render(<DiaryCreatePage />)
-    await screen.findByText('今天发生了什么？')
+    await screen.findByPlaceholderText(/今天发生了什么？/)
 
     fireEvent.click(screen.getByTitle('点击选择岗位'))
 
@@ -189,7 +193,7 @@ describe('DiaryCreatePage 岗位选择器', () => {
 
   it('选择预设后写入胶囊并关闭下拉', async () => {
     render(<DiaryCreatePage />)
-    await screen.findByText('今天发生了什么？')
+    await screen.findByPlaceholderText(/今天发生了什么？/)
 
     fireEvent.click(screen.getByTitle('点击选择岗位'))
     fireEvent.click(screen.getByText('SQE'))
@@ -200,7 +204,7 @@ describe('DiaryCreatePage 岗位选择器', () => {
 
   it('输入自定义岗位后回车即可使用', async () => {
     render(<DiaryCreatePage />)
-    await screen.findByText('今天发生了什么？')
+    await screen.findByPlaceholderText(/今天发生了什么？/)
 
     fireEvent.click(screen.getByTitle('点击选择岗位'))
     const input = screen.getByPlaceholderText('输入或选择岗位')
@@ -212,7 +216,7 @@ describe('DiaryCreatePage 岗位选择器', () => {
 
   it('输入关键词会筛选预设', async () => {
     render(<DiaryCreatePage />)
-    await screen.findByText('今天发生了什么？')
+    await screen.findByPlaceholderText(/今天发生了什么？/)
 
     fireEvent.click(screen.getByTitle('点击选择岗位'))
     fireEvent.change(screen.getByPlaceholderText('输入或选择岗位'), { target: { value: '工程' } })
@@ -224,7 +228,7 @@ describe('DiaryCreatePage 岗位选择器', () => {
 
   it('按 Esc 关闭下拉且不改动岗位', async () => {
     render(<DiaryCreatePage />)
-    await screen.findByText('今天发生了什么？')
+    await screen.findByPlaceholderText(/今天发生了什么？/)
 
     fireEvent.click(screen.getByTitle('点击选择岗位'))
     expect(screen.getByPlaceholderText('输入或选择岗位')).toBeTruthy()

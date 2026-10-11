@@ -115,15 +115,21 @@ for (const d of DEVICES) {
       out.zoomRisk = zoomRisk
 
       // 4. 固定底部导航 vs 内容底部内边距（是否被遮住）
-      //    只在移动布局下检查：宽度 >=768px 走桌面布局，此时页面里的 <nav> 是侧边栏导航
+      //    只在移动布局下检查，且要排除抽屉里的导航 ——
+      //    querySelector('nav') 现在会先找到抽屉面板里的那个，
+      //    它是竖向列表（宽度远小于视口），不是横贯底部的导航条。
       if (window.innerWidth < 768) {
         const nav = document.querySelector('nav')
         if (nav) {
           const nr = nav.getBoundingClientRect()
-          out.navBottom = Math.round(window.innerHeight - nr.bottom)
-          out.navHeight = Math.round(nr.height)
-          const content = document.querySelector('main > div')
-          out.mainPadBottom = content ? parseFloat(getComputedStyle(content).paddingBottom) : null
+          const looksLikeBottomBar =
+            nr.width > window.innerWidth * 0.8 && window.innerHeight - nr.bottom < 40
+          if (looksLikeBottomBar) {
+            out.navBottom = Math.round(window.innerHeight - nr.bottom)
+            out.navHeight = Math.round(nr.height)
+            const content = document.querySelector('main > div')
+            out.mainPadBottom = content ? parseFloat(getComputedStyle(content).paddingBottom) : null
+          }
         }
       }
 

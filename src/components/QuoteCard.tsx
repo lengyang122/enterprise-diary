@@ -3,7 +3,10 @@ import { randomQuote, type Quote } from '../lib/quotes'
 import { RefreshIcon } from './icons'
 
 // 首页顶部的随机文案：每次进入随机一条，「换一句」换下一条（不会重复当前这条）。
-// 另外承载一次性的草稿恢复提示 —— 内联在卡片里，不用浮层，免得压住其他内容。
+// 另外承载一次性的草稿恢复提示。
+//
+// 改版后不再是一张玻璃卡 —— 输入态要「只有一个框」，
+// 文案改为纯文字居中，安静地待在上方，也让背景动效更完整地露出来。
 export default function QuoteCard({
   notice,
   onDismissNotice,
@@ -14,37 +17,37 @@ export default function QuoteCard({
   const [quote, setQuote] = useState<Quote>(() => randomQuote())
 
   return (
-    <div className="glass rounded-glass flex items-start gap-3 px-5 py-3.5 mb-3.5 text-static">
-      <div className="min-w-0 flex-1 text-center">
-        <p className="text-[13.5px] text-ink-secondary leading-relaxed">{quote.text}</p>
-        <p className="text-[11.5px] text-ink-tertiary mt-1.5">— {quote.author}</p>
+    <div className="text-center mb-7 text-static">
+      <p className="text-[15px] text-ink-secondary leading-relaxed">{quote.text}</p>
 
-        {notice && (
-          <div className="flex items-center gap-2 mt-2.5 animate-fadeIn">
-            <span className="text-[11.5px] text-accent">{notice}</span>
-            {onDismissNotice && (
-              <button
-                onClick={onDismissNotice}
-                className="text-ink-tertiary hover:text-ink text-[14px] transition-colors duration-200 grid place-items-center w-11 h-11 -my-3 -mx-2"
-                title="关闭"
-                aria-label="关闭"
-              >
-                ×
-              </button>
-            )}
-          </div>
-        )}
+      <div className="flex items-center justify-center gap-1 mt-2">
+        <p className="text-[11.5px] text-ink-tertiary">— {quote.author}</p>
+        {/* 图标只有 12px，点击区靠 tap-min 在触屏上撑到 44px */}
+        <button
+          onClick={() => setQuote(q => randomQuote(q.text))}
+          className="tap-min grid place-items-center w-8 h-8 text-ink-tertiary hover:text-accent transition-colors duration-200"
+          title="换一句"
+          aria-label="换一句"
+        >
+          <RefreshIcon size={12} />
+        </button>
       </div>
 
-      {/* 图标只有 13px，但点击区撑到 44x44（iOS 建议的最小触控尺寸） */}
-      <button
-        onClick={() => setQuote(q => randomQuote(q.text))}
-        className="btn-quiet shrink-0 grid place-items-center w-11 h-11 -mr-2 -my-1"
-        title="换一句"
-        aria-label="换一句"
-      >
-        <RefreshIcon size={13} />
-      </button>
+      {notice && (
+        <div className="flex items-center justify-center gap-2 mt-3 animate-fadeIn">
+          <span className="text-[11.5px] text-accent">{notice}</span>
+          {onDismissNotice && (
+            <button
+              onClick={onDismissNotice}
+              className="tap-min grid place-items-center w-8 h-8 text-ink-tertiary hover:text-ink text-[14px] transition-colors duration-200"
+              title="关闭"
+              aria-label="关闭"
+            >
+              ×
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

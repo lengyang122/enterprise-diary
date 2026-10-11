@@ -24,27 +24,41 @@ const SYSTEM_PROMPT = `你是中国计量大学质量管理工程专业大三学
 - 生成内容要符合用户指定的实习岗位（如PQE写质量管控相关，PE写工艺设备相关，各岗位侧重点不同）`
 
 function buildPrompt(input: DiaryFormInput): string {
-  return `根据今天的实习记录写企业实践日记（实习内容约150-200字，体会约150-200字，其他约80-120字）。
+  // 改版后输入区是一个自由文本框，三栏内容都来自同一段原始记录。
+  // （feelings / other 字段保留是为了兼容旧草稿与历史数据，新流程下通常为空。）
+  // 所以这里把草稿当作一整块素材交给模型，让它自己拆分归类；
+  // 若确实存在分开填写的旧草稿，则沿用原来的分栏呈现。
+  const hasSeparate = Boolean(input.feelings?.trim() || input.other?.trim())
+  const material = hasSeparate
+    ? `【草稿：实习内容】\n${input.content || '（无）'}\n\n【草稿：实习体会和感受】\n${
+        input.feelings || '（无）'
+      }\n\n【草稿：其他】\n${input.other || '（无）'}`
+    : `【原始素材：一段随手记，没有分段，可能混着「今天做了什么」「有什么感受」「别的零碎事项」】\n${
+        input.content || '（无）'
+      }`
+
+  return `把下面这段实习记录整理成企业实践日记的三栏内容：
+- 实习内容：约 150-200 字，写清楚当天做了什么
+- 实习体会和感受：约 150-200 字，写从中得到的认识与思考
+- 其他：约 80-120 字，写还想记下的零碎事项
 
 【实习岗位】${input.position || '实习生'}
 【日期】${input.date || ''}
 
-【草稿：实习内容】
-${input.content}
+${material}
 
-【草稿：实习体会和感受】
-${input.feelings}
-
-【草稿：其他】
-${input.other}
+要求：
+- 三栏各自成文，不要把同一句话在几栏里重复搬运。
+- 只依据素材写，不要编造素材里没有出现过的数字、人名、设备型号、事件。
+- 素材偏简略时宁可写得平实，也不要靠虚构细节凑字数。
 
 按以下格式输出：
 
 ===实习内容===
-（重写为正式实习内容）
+（正式表述）
 
 ===实习体会和感受===
-（重写为正式体会）
+（正式表述）
 
 ===其他===
 （简洁补充）`
@@ -233,14 +247,24 @@ export async function testAIConnection(config: AIConfig): Promise<ConnectionTest
 // ---- 单栏生成 ----
 
 function sectionPrompt(def: SectionTarget, input: DiaryFormInput, extra = ''): string {
-  return `根据今天的实习记录草稿，写企业实践日记中【${def.label}】一栏的内容（${def.min}-${def.max} 字，按汉字计，不得少于 ${def.min} 字）。
+  // 与 buildPrompt 同理：新版输入是一段自由素材，旧草稿才分三栏。
+  const hasSeparate = Boolean(input.feelings?.trim() || input.other?.trim())
+  const material = hasSeparate
+    ? `今天草稿：
+- 实习内容：${input.content || '（无）'}
+- 实习体会：${input.feelings || '（无）'}
+- 其他：${input.other || '（无）'}`
+    : `原始素材（一段随手记，没有分段，需要你自己判断哪些属于【${def.label}】）：
+${input.content || '（无）'}`
+
+  return `写企业实践日记中【${def.label}】一栏的内容（${def.min}-${def.max} 字，按汉字计，不得少于 ${def.min} 字）。
 
 实习岗位：${input.position || '实习生'}
 
-今天草稿：
-- 实习内容：${input.content || '（无）'}
-- 实习体会：${input.feelings || '（无）'}
-- 其他：${input.other || '（无）'}
+${material}
+
+只依据素材写，不要编造素材里没有出现过的数字、人名、设备型号、事件；
+素材偏简略时宁可写得平实，也不要靠虚构细节凑字数。
 
 只输出这一栏的正文，不要标题、标记或解释。${extra}`
 }

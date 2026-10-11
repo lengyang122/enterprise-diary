@@ -108,6 +108,16 @@ export default function DiaryCreatePage() {
     return () => clearTimeout(timer)
   }, [restored])
 
+  // 输入态用高彩度背景（动效更明显、也更贴合「随手写」的轻松感）；
+  // 生成后回落成默认的柔和版，配合正式的三段式排版。
+  // 标记打在 <html> 上 —— 背景由 Layout 里的 GlassBackground 渲染，不在本页的 DOM 子树里。
+  useEffect(() => {
+    const root = document.documentElement
+    if (aiResult) root.classList.remove('bg-vivid')
+    else root.classList.add('bg-vivid')
+    return () => root.classList.remove('bg-vivid')
+  }, [aiResult])
+
   function formatDate(d: Date): string {
     const month = d.getMonth() + 1
     const day = d.getDate()
@@ -116,8 +126,9 @@ export default function DiaryCreatePage() {
 
   // AI 生成
   async function handleGenerate() {
-    if (!form.content && !form.feelings) {
-      alert('请至少写下一点今天的内容')
+    // 输入态只有一个自由文本框，正文是唯一的必填项
+    if (!form.content.trim()) {
+      alert('先随便写几句今天的事吧')
       return
     }
 
@@ -354,16 +365,12 @@ export default function DiaryCreatePage() {
         onDismissNotice={() => setRestored(false)}
       />
 
-      {/* 顶栏 —— z-20 是必需的：
-          .glass 的 backdrop-filter 会创建层叠上下文，下面的输入卡同样是独立上下文且
-          z-index 为 auto，于是整张卡会按 DOM 顺序画在顶栏之上，把岗位下拉盖住。
-          给顶栏提级，才能让弹出层真正浮在最上面。 */}
-      <div className="glass rounded-glass-lg relative z-20 flex items-center justify-end gap-4 px-5 py-3.5 mb-3.5">
-        {/* 标题绝对居中：用 justify-between 时它会被右侧胶囊挤到左边 */}
-        <h2 className="absolute left-1/2 -translate-x-1/2 text-[19px] font-bold text-ink tracking-tight text-static">
-          今天
-        </h2>
-        <div className="flex items-center gap-2">
+      {/* 唯一的输入卡 —— z-20 是必需的：
+          .glass 的 backdrop-filter 会创建层叠上下文，后面若还有独立上下文且 z-index
+          为 auto 的元素，会按 DOM 顺序画在它之上，把岗位下拉盖住。提级才能让弹层浮在最上面。 */}
+      <div className="glass rounded-glass-lg relative z-20 px-5 py-5 md:px-7 md:py-6">
+        {/* 日期与岗位放进卡片内部，省掉一条顶栏 —— 输入态要的就是「只有一个框」 */}
+        <div className="flex items-center justify-center gap-2 mb-4">
           <EditableChip value={form.date} onChange={v => setForm(f => ({ ...f, date: v }))} />
           <PositionPicker
             value={form.position}
@@ -374,30 +381,13 @@ export default function DiaryCreatePage() {
             }}
           />
         </div>
-      </div>
 
-      {/* 三个输入区 */}
-      <div className="grid gap-3.5">
-        <PromptArea
-          title="今天发生了什么？"
-          hint="现场工作、会议、异常、数据"
+        <textarea
           value={form.content}
-          onChange={v => setForm(f => ({ ...f, content: v }))}
-          placeholder="记录几个关键词就好，比如：参加异常分析会议、跟进锡膏印刷不良…"
-        />
-        <PromptArea
-          title="今天有什么收获？"
-          hint="学到的方法、新的认识"
-          value={form.feelings}
-          onChange={v => setForm(f => ({ ...f, feelings: v }))}
-          placeholder="例如：第一次接触5Why分析、理解了QCP的管控逻辑…"
-        />
-        <PromptArea
-          title="还有什么想留下？"
-          hint="可留空"
-          value={form.other}
-          onChange={v => setForm(f => ({ ...f, other: v }))}
-          placeholder="可留空。临时事项、培训、会议、想记住的瞬间…"
+          onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
+          placeholder={'今天发生了什么？\n随便写，不用讲究分段和措辞。\n比如：上午产线巡检，贴片机抛料率偏高，跟着师傅做了 5Why 分析…'}
+          rows={7}
+          className="w-full bg-transparent resize-none text-[14.5px] leading-[1.95] text-ink placeholder:text-ink-tertiary ph-center"
         />
       </div>
 
@@ -408,11 +398,12 @@ export default function DiaryCreatePage() {
       )}
 
       {/* 主操作 */}
-      <div className="flex justify-center pt-7">
-        <button onClick={handleGenerate} className="btn-primary">
+      <div className="flex flex-col items-center pt-6">
+        <button onClick={handleGenerate} className="btn-primary px-8 py-3.5">
           <PlusIcon size={16} />
           整理今天
         </button>
+        <p className="text-[11.5px] text-ink-tertiary mt-3">点一下，AI 会把它整理成规范的三段式日记</p>
       </div>
 
       {profile && (
@@ -429,41 +420,7 @@ export default function DiaryCreatePage() {
 // 局部组件
 // ============================================================
 
-// 玻璃输入卡：悬停浮起、聚焦时提亮 + 蓝色光环
-function PromptArea({
-  title,
-  hint,
-  value,
-  onChange,
-  placeholder,
-}: {
-  title: string
-  hint: string
-  value: string
-  onChange: (v: string) => void
-  placeholder: string
-}) {
-  return (
-    <div className="glass rounded-glass px-5 py-4 glass-hover focus-within:bg-white/70 focus-within:shadow-glass-ring">
-      {/* 标题居中；提示小字绝对定位到右侧，不参与居中计算（本来就只有 ≥sm 显示） */}
-      <div className="relative mb-2.5">
-        <h3 className="text-center text-[14.5px] font-semibold text-ink tracking-tight text-static">
-          {title}
-        </h3>
-        <span className="hidden sm:block absolute right-0 top-1/2 -translate-y-1/2 text-[11.5px] text-ink-tertiary text-static">
-          {hint}
-        </span>
-      </div>
-      <textarea
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        rows={3}
-        className="w-full bg-transparent resize-none text-[14.5px] leading-[1.92] text-ink placeholder:text-ink-tertiary ph-center"
-      />
-    </div>
-  )
-}
+// （原 PromptArea 组件已移除：改版后输入态只有一个自由文本框，不再需要三个带标题的输入区）
 
 // 可编辑胶囊（日期等自由文本）：点击后变为输入框，回车/失焦保存
 // 日期在存储与导出里一直是「9月2日」这种展示格式（Word 文件名也依赖它），

@@ -1,45 +1,38 @@
+// 页面骨架
+//
+// 改版后结构极简：一块背景 + 左上角一个抽屉按钮 + 内容区。
+// 原来的「桌面常驻侧栏」与「移动端吸顶栏 + 底部导航」都已移除 ——
+// 导航统一收进 NavDrawer，页面平时只有内容，背景动效完整露出。
+import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
-import Sidebar from './Sidebar'
-import MobileNav from './MobileNav'
+import NavDrawer from './NavDrawer'
 import GlassBackground from '../GlassBackground'
-import { BriefcaseIcon } from '../icons'
+import { MenuIcon } from '../icons'
 
 export default function Layout() {
+  const [navOpen, setNavOpen] = useState(false)
+
   return (
     <div className="relative min-h-screen">
       <GlassBackground />
 
-      {/* 桌面端侧边栏 —— 悬浮玻璃面板。safe-sidebar 让它避开横屏手机的侧边刘海 */}
-      <div className="hidden md:block fixed z-30 w-[236px] glass-safe-sidebar">
-        <Sidebar />
-      </div>
+      {/* 抽屉触发器：收起状态下页面上唯一的常驻控件 */}
+      <button
+        onClick={() => setNavOpen(true)}
+        aria-label="打开导航"
+        title="导航"
+        className="glass glass-safe-trigger fixed z-30 w-11 h-11 rounded-[14px] grid place-items-center glass-press"
+      >
+        <MenuIcon size={18} />
+      </button>
 
-      {/* 移动端吸顶栏：safe-* 类会加上 iOS 安全区（刘海 / 灵动岛），横屏时含左右 */}
-      <header className="md:hidden fixed top-0 inset-x-0 z-30 glass-safe-top">
-        <div className="glass rounded-glass-lg flex items-center gap-2.5 px-4 h-[52px]">
-          <span
-            className="w-7 h-7 rounded-[9px] text-white grid place-items-center shrink-0"
-            style={{
-              background: 'linear-gradient(160deg,#4EA8FF,#0A84FF)',
-              boxShadow: '0 5px 14px -6px rgba(10,132,255,.8), inset 0 1px 0 rgba(255,255,255,.6)',
-            }}
-          >
-            <BriefcaseIcon size={15} />
-          </span>
-          <span className="text-[14.5px] font-semibold tracking-tight">企业实践日记</span>
-        </div>
-      </header>
+      <NavDrawer open={navOpen} onClose={() => setNavOpen(false)} />
 
-      <main className="relative z-10 md:pl-[260px]">
-        <div className="mx-auto w-full max-w-[880px] px-3 md:px-6 glass-safe-content">
+      <main className="relative z-10">
+        <div className="mx-auto w-full max-w-[760px] glass-safe-content">
           <Outlet />
         </div>
       </main>
-
-      {/* 移动端底部导航：safe-bottom 保证不被 Home 指示条压住 */}
-      <div className="md:hidden fixed bottom-0 inset-x-0 z-30 glass-safe-bottom">
-        <MobileNav />
-      </div>
     </div>
   )
 }

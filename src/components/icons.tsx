@@ -61,6 +61,15 @@ export function BriefcaseIcon(props: IconProps) {
   )
 }
 
+/** 汉堡菜单 —— 抽屉导航的触发器 */
+export function MenuIcon(props: IconProps) {
+  return (
+    <svg {...svgProps(props)}>
+      <path d="M3.2 6h13.6M3.2 10h13.6M3.2 14h13.6" />
+    </svg>
+  )
+}
+
 export function DownloadIcon(props: IconProps) {
   return (
     <svg {...svgProps(props)}>
