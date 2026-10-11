@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { DocIcon, WriteIcon, HistoryIcon, SettingsIcon } from '../icons'
+import { BriefcaseIcon, WriteIcon, HistoryIcon, SettingsIcon } from '../icons'
 
 const navItems = [
   { path: '/', label: '新建日记', Icon: WriteIcon },
@@ -19,7 +19,7 @@ export default function Sidebar() {
             boxShadow: '0 6px 16px -6px rgba(10,132,255,.75), inset 0 1px 0 rgba(255,255,255,.6)',
           }}
         >
-          <DocIcon size={19} />
+          <BriefcaseIcon size={19} />
         </span>
         <div className="min-w-0">
           <h1 className="text-[15px] font-semibold text-ink tracking-tight leading-tight">

@@ -50,16 +50,6 @@ export function SettingsIcon(props: IconProps) {
 }
 
 // 文档 —— 品牌标识
-export function DocIcon(props: IconProps) {
-  return (
-    <svg {...svgProps(props)}>
-      <path d="M7 2.6h5.2L15.6 6v11.4H7a1 1 0 0 1-1-1V3.6a1 1 0 0 1 1-1z" />
-      <path d="M11.9 2.6V6h3.7" />
-      <path d="M8.6 10.6h5M8.6 13.4h3.2" />
-    </svg>
-  )
-}
-
 /** 商务风格：公文箱。线条更少、更几何，用于企业场景的标识。 */
 export function BriefcaseIcon(props: IconProps) {
   return (

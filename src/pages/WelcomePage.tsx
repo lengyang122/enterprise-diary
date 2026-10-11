@@ -70,7 +70,8 @@ export default function WelcomePage() {
 
       <main className="relative z-10 w-full max-w-[380px]">
         {stage === 'form' && (
-          <section className="auth-card px-6 py-6 animate-fadeIn" key="form">
+          // 底部内边距比顶部小：「忘记密码？」是弱化的收尾元素，不该在它下面留一大块空
+          <section className="auth-card px-6 pt-6 pb-4 animate-fadeIn" key="form">
             <header className="flex flex-col items-center text-center mb-6">
               <span className="auth-mark mb-3.5">
                 <BriefcaseIcon size={20} />

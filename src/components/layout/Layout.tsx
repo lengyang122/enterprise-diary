@@ -2,7 +2,7 @@ import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import MobileNav from './MobileNav'
 import GlassBackground from '../GlassBackground'
-import { DocIcon } from '../icons'
+import { BriefcaseIcon } from '../icons'
 
 export default function Layout() {
   return (
@@ -24,7 +24,7 @@ export default function Layout() {
               boxShadow: '0 5px 14px -6px rgba(10,132,255,.8), inset 0 1px 0 rgba(255,255,255,.6)',
             }}
           >
-            <DocIcon size={15} />
+            <BriefcaseIcon size={15} />
           </span>
           <span className="text-[14.5px] font-semibold tracking-tight">企业实践日记</span>
         </div>

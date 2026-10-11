@@ -249,7 +249,10 @@ function startStaticServer() {
 async function main() {
   const filter = process.argv[2]
 
-  await rm(OUT, { recursive: true, force: true })
+  // 只在跑全量时清空目录：带过滤参数时若也清空，
+  // 会把上一次跑出来的其他截图一起删掉（已踩过两次）
+  await mkdir(OUT, { recursive: true })
+  if (!filter) await rm(OUT, { recursive: true, force: true })
   await mkdir(OUT, { recursive: true })
 
   const server = startStaticServer()
