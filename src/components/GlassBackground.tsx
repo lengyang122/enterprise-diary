@@ -2,15 +2,13 @@
 // 低饱和配色（钢蓝 / 藕荷 / 灰青 / 一点暖褐），有层次但不跳；
 // 光斑以 24–31s 的超慢速度漂移，让界面像在呼吸。
 //
-// 另有两层配套：
-//   GlassFilterDefs —— 全局液态玻璃滤镜定义，供 .glass 的 backdrop-filter 引用
-//   .glass-grain    —— 极淡颗粒，给折射提供可弯折的高频细节
-import GlassFilterDefs from './GlassFilterDefs'
-
+// 另有一层 .glass-grain：极淡颗粒，给玻璃提供细微的高频细节。
+//
+// 这里曾同时挂载 GlassFilterDefs（SVG 折射滤镜）。实测该滤镜让每帧耗时
+// 从 6.9ms 涨到 39.6ms，而本项目背景是平滑渐变、折射根本看不见 —— 已移除。
 export default function GlassBackground() {
   return (
     <>
-      <GlassFilterDefs />
       <div className="glass-mesh" aria-hidden="true">
         <i />
         <i />
