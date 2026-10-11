@@ -95,6 +95,12 @@ describe('WelcomePage 假登录流程', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '开始记录' }))
 
+    // 进入前会等一次「让正在进入…先画出来」的双 rAF（带 120ms 超时兜底），
+    // 这里把假定时器推过去
+    await act(async () => {
+      vi.advanceTimersByTime(300)
+    })
+
     await waitFor(async () => {
       expect(hasEntered()).toBe(true)
     })
@@ -112,5 +118,38 @@ describe('WelcomePage 假登录流程', () => {
       vi.advanceTimersByTime(1300)
     })
     expect(screen.getByText('骗到你了 😄')).toBeTruthy()
+  })
+
+  it('个人资料写入失败时仍必须进入主页 —— 绝不能把用户锁死在这一页', async () => {
+    // 复现 iOS 隐私模式 / 配额满：localStorage.setItem 抛异常。
+    // 曾经的写法会在这里中断：标记没落、navigate 没执行、
+    // 按钮停在「正在进入…」并永久禁用。
+    const orig = Storage.prototype.setItem
+    Storage.prototype.setItem = function (k: string, v: string) {
+      if (k === 'enterprise-diary-profile') throw new Error('QuotaExceededError')
+      return orig.call(this, k, v)
+    }
+
+    try {
+      renderPage()
+      await submitForm('冷阳', 'PQE')
+      await act(async () => {
+        vi.advanceTimersByTime(1300)
+      })
+
+      fireEvent.click(screen.getByRole('button', { name: '开始记录' }))
+
+      await act(async () => {
+        vi.advanceTimersByTime(300)
+      })
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true })
+      })
+      // 「已进入」标记必须先落下来，否则刷新又会退回进入页
+      expect(hasEntered()).toBe(true)
+    } finally {
+      Storage.prototype.setItem = orig
+    }
   })
 })

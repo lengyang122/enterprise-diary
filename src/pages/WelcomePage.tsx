@@ -53,14 +53,43 @@ export default function WelcomePage() {
 
   async function enter() {
     setSaving(true)
-    // 把「注册」填的内容真的写进个人资料 —— 这是整个设计的落点
-    const existing = await getProfile()
-    await saveProfile({
-      ...(existing ?? EMPTY_PROFILE),
-      name: name.trim(),
-      ...(position.trim() ? { company: position.trim() } : {}),
-    })
+
+    // 顺序很重要：先把「已进入」标记落下来。
+    // 它是能否进主页的唯一关键，且自身不会抛错（内部已 try/catch）。
+    // 曾经把这段放在 saveProfile 之后，结果 localStorage 写入失败时
+    // （配额满 / iOS 隐私模式）整个函数在 await 处中断 —— 标记没落、
+    // navigate 没执行、按钮停在「正在进入…」并永久禁用，用户被锁死在这一页。
     markEntered()
+
+    // 个人资料是尽力而为：存不下也不该挡住进入，设置页里随时能补
+    try {
+      const existing = await getProfile()
+      await saveProfile({
+        ...(existing ?? EMPTY_PROFILE),
+        name: name.trim(),
+        ...(position.trim() ? { company: position.trim() } : {}),
+      })
+    } catch (err) {
+      console.error('个人资料保存失败，仍然进入主页', err)
+    }
+
+    // 让「正在进入…」先真正画出来，再跳转。
+    // navigate 会同步挂载整个主页（Layout + 背景 + 一屏玻璃卡），
+    // 这段是同步阻塞的；不给浏览器一次绘制机会的话，
+    // 用户看到的是按钮僵在原地不动，而不是「正在进入」——
+    // 低端机上尤其明显（实测 CPU 降速 10x 时挂载要 1.4s）。
+    // 用双 rAF 确保已经合成过一帧；再加超时兜底，
+    // 防止页面在后台时 rAF 不触发导致永远等不到。
+    await new Promise<void>(resolve => {
+      const timer = window.setTimeout(resolve, 120)
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          window.clearTimeout(timer)
+          resolve()
+        })
+      )
+    })
+
     navigate('/', { replace: true })
   }
 
