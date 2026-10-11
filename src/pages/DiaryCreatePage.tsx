@@ -492,7 +492,7 @@ function EditableChip({
   }
 
   return (
-    <button onClick={startEdit} className="chip chip-glass" title="点击修改">
+    <button onClick={startEdit} className="chip chip-glass chip-tap" title="点击修改">
       {value}
     </button>
   )
@@ -548,7 +548,7 @@ function PositionPicker({
 
   return (
     <div className="relative" ref={boxRef}>
-      <button onClick={openPicker} className="chip chip-glass" title="点击选择岗位">
+      <button onClick={openPicker} className="chip chip-glass chip-tap" title="点击选择岗位">
         {value}
       </button>
 

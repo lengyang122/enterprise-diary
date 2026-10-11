@@ -3,7 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover 让页面铺满刘海屏/挖孔屏的整个屏幕，
+         配合 CSS 里的 env(safe-area-inset-*) 把内容避开刘海与 Home 指示条。
+         不加这个，浏览器会把页面缩进到安全区内，顶部与底部的渐变背景就铺不满。 -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#d3e0f0" />
     <title>企业实践日记</title>
   </head>
   <body>

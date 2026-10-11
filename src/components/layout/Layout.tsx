@@ -9,13 +9,13 @@ export default function Layout() {
     <div className="relative min-h-screen">
       <GlassBackground />
 
-      {/* 桌面端侧边栏 —— 悬浮玻璃面板 */}
-      <div className="hidden md:block fixed left-3 top-3 bottom-3 z-30 w-[236px]">
+      {/* 桌面端侧边栏 —— 悬浮玻璃面板。safe-sidebar 让它避开横屏手机的侧边刘海 */}
+      <div className="hidden md:block fixed z-30 w-[236px] glass-safe-sidebar">
         <Sidebar />
       </div>
 
-      {/* 移动端吸顶栏 */}
-      <header className="md:hidden fixed top-0 inset-x-0 z-30 px-3 pt-3">
+      {/* 移动端吸顶栏：safe-* 类会加上 iOS 安全区（刘海 / 灵动岛），横屏时含左右 */}
+      <header className="md:hidden fixed top-0 inset-x-0 z-30 glass-safe-top">
         <div className="glass rounded-glass-lg flex items-center gap-2.5 px-4 h-[52px]">
           <span
             className="w-7 h-7 rounded-[9px] text-white grid place-items-center shrink-0"
@@ -31,13 +31,13 @@ export default function Layout() {
       </header>
 
       <main className="relative z-10 md:pl-[260px]">
-        <div className="mx-auto w-full max-w-[880px] px-3 md:px-6 pt-[76px] md:pt-3 pb-32 md:pb-6">
+        <div className="mx-auto w-full max-w-[880px] px-3 md:px-6 glass-safe-content">
           <Outlet />
         </div>
       </main>
 
-      {/* 移动端底部导航 */}
-      <div className="md:hidden fixed bottom-0 inset-x-0 z-30 px-3 pb-3">
+      {/* 移动端底部导航：safe-bottom 保证不被 Home 指示条压住 */}
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-30 glass-safe-bottom">
         <MobileNav />
       </div>
     </div>

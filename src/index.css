@@ -428,3 +428,82 @@ button:focus {
     transform: none;
   }
 }
+
+/* ============================================================
+   移动端适配
+   ============================================================ */
+
+/* ---- iOS 安全区 ----
+   index.html 里开了 viewport-fit=cover，页面会铺满整个屏幕，
+   所以固定定位的元素必须自己避开刘海 / 灵动岛 / Home 指示条。
+   env() 在不支持的环境取 0，退化成原来的 0.75rem。 */
+.glass-safe-top {
+  padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));
+  padding-left: calc(0.75rem + env(safe-area-inset-left, 0px));
+  padding-right: calc(0.75rem + env(safe-area-inset-right, 0px));
+}
+
+.glass-safe-bottom {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  padding-left: calc(0.75rem + env(safe-area-inset-left, 0px));
+  padding-right: calc(0.75rem + env(safe-area-inset-right, 0px));
+}
+
+/* 桌面端侧边栏：横屏手机上刘海在侧边，固定定位的侧栏必须自己让开 */
+.glass-safe-sidebar {
+  left: max(0.75rem, env(safe-area-inset-left, 0px));
+  top: max(0.75rem, env(safe-area-inset-top, 0px));
+  bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+}
+
+/* 正文区：顶部让开吸顶栏，底部让开底部导航 + Home 指示条 */
+.glass-safe-content {
+  padding-top: calc(76px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(8rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 768px) {
+  /* 桌面端没有刘海，也不需要给固定导航留空间 */
+  .glass-safe-content {
+    padding-top: 0.75rem;
+    padding-bottom: 1.5rem;
+  }
+}
+
+/* ---- 触屏设备的判定依据是「指针能力」，不是屏幕宽度 ----
+   iPhone 横屏有 852px 宽，会超过 768px 断点走桌面布局；
+   若用 max-width 判断，这些规则在横屏下就全部失效了。
+   用 (hover: none) and (pointer: coarse) 才能同时覆盖手机横竖屏与平板。 */
+@media (hover: none) and (pointer: coarse) {
+  /* iOS Safari 在聚焦 font-size < 16px 的输入框时会把整页放大，且不会自动缩回。
+     用 !important 是因为组件里写的是 Tailwind 的 text-[14.5px] 之类工具类。 */
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  /* 可点击的小胶囊（日期 / 岗位）：撑高点击区，否则 28px 高很难点中 */
+  .chip-tap {
+    min-height: 44px;
+    padding-left: 1.1rem;
+    padding-right: 1.1rem;
+  }
+
+  /* 设置页那种隐式输入框：本身只有 37px 高 */
+  .field-tap {
+    min-height: 44px;
+  }
+
+  /* 各种按钮（保存 / 测试连接 / 导出备份…）统一抬到 44px —— iOS 人机指南的最小值 */
+  .btn-primary,
+  .btn-glass,
+  .btn-quiet {
+    min-height: 44px;
+  }
+
+  /* 侧边栏导航项：横屏手机上会走桌面布局，此时它仍是主入口 */
+  .nav-item-tap {
+    min-height: 44px;
+  }
+}

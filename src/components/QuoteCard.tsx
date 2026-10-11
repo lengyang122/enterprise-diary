@@ -25,7 +25,7 @@ export default function QuoteCard({
             {onDismissNotice && (
               <button
                 onClick={onDismissNotice}
-                className="text-ink-tertiary hover:text-ink leading-none text-[14px] transition-colors duration-200"
+                className="text-ink-tertiary hover:text-ink text-[14px] transition-colors duration-200 grid place-items-center w-11 h-11 -my-3 -mx-2"
                 title="关闭"
                 aria-label="关闭"
               >
@@ -36,9 +36,10 @@ export default function QuoteCard({
         )}
       </div>
 
+      {/* 图标只有 13px，但点击区撑到 44x44（iOS 建议的最小触控尺寸） */}
       <button
         onClick={() => setQuote(q => randomQuote(q.text))}
-        className="btn-quiet p-1.5 shrink-0"
+        className="btn-quiet shrink-0 grid place-items-center w-11 h-11 -mr-2 -my-1"
         title="换一句"
         aria-label="换一句"
       >

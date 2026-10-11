@@ -228,3 +228,53 @@ backdrop-filter: blur(28px) saturate(185%);                        ← 降级（
 > 上下文且 `z-index: auto` 时，卡片会按 DOM 顺序画在顶栏之上，把顶栏里的下拉弹层盖住 ——
 > 弹层自身的 `z-index` 出不了父上下文。解决方式是给顶部栏本身提级（如 `relative z-20`）。
 > 岗位下拉就踩过这个坑。
+
+## 移动端适配
+
+### 断点
+
+- `< 768px` 走移动布局：吸顶栏 + 底部导航，无侧边栏
+- `>= 768px` 走桌面布局：固定侧边栏
+- 对应 Tailwind 的 `md:`，代码里以 `md:hidden` / `hidden md:block` 切换
+
+### iOS 安全区
+
+`index.html` 开了 `viewport-fit=cover`，页面铺满整个屏幕，**固定定位的元素必须自己避开
+刘海 / 灵动岛 / Home 指示条**（`src/index.css` 里的 `.glass-safe-*` 类，用 `env()` 取值，
+不支持的环境退化为 0）：
+
+| 类 | 用在哪 |
+|---|---|
+| `.glass-safe-top` | 移动端吸顶栏（含横屏时左右刘海） |
+| `.glass-safe-bottom` | 移动端底部导航 |
+| `.glass-safe-content` | 正文区，顶部让开吸顶栏、底部让开导航 |
+| `.glass-safe-sidebar` | 桌面侧边栏（横屏手机刘海在侧边） |
+
+### 触屏规则必须按「指针能力」判断，不能用屏幕宽度
+
+iPhone 横屏有 852px 宽，**超过 768px 断点会走桌面布局**。若用 `max-width` 判断，
+字号与触控规则在横屏下会全部失效。所以统一用：
+
+```css
+@media (hover: none) and (pointer: coarse) { ... }
+```
+
+覆盖两类问题：
+
+1. **iOS 聚焦自动放大** —— iOS Safari 在聚焦 `font-size < 16px` 的输入框时会把整页放大，
+   且不会自动缩回。触屏设备上输入框一律抬到 16px
+2. **触控目标** —— iOS 人机指南建议最小 44×44pt。用 `.chip-tap`（小胶囊）、
+   `.field-tap`（隐式输入框）、`.nav-item-tap`（侧栏导航）、以及 `.btn-*` 统一下限
+
+### 体检脚本
+
+```bash
+node scripts/audit-mobile.mjs
+```
+
+按 5 种真实机型（iPhone SE / 15 Pro / Pixel 8 / 360px 小屏安卓 / iPhone 横屏）×
+3 个页面共 15 个组合，检查：横向溢出（并指出越界元素）、触控目标尺寸、
+输入框字号、底部导航遮挡、viewport 配置。**当前 15/15 全部通过。**
+
+> 提示：横屏下会走桌面布局，此时页面里的 `<nav>` 是侧边栏导航而非底部导航，
+> 脚本据此只在 `< 768px` 时做导航遮挡检查。

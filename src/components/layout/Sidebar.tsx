@@ -36,7 +36,7 @@ export default function Sidebar() {
             key={path}
             to={path}
             className={({ isActive }) =>
-              `flex items-center gap-2.5 px-3 py-2.5 rounded-glass-sm text-[13.5px] transition-all duration-300 ease-ios ${
+              `flex items-center gap-2.5 px-3 py-2.5 rounded-glass-sm text-[13.5px] nav-item-tap transition-all duration-300 ease-ios ${
                 isActive
                   ? 'bg-white/70 text-ink font-semibold shadow-glass-sm'
                   : 'text-ink-secondary hover:bg-white/55 hover:text-ink'

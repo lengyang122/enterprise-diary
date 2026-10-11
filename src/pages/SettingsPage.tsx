@@ -28,9 +28,10 @@ function createEmptyProfile(): Profile {
 }
 
 // 右对齐的隐式输入框：静止无边界，悬停/聚焦时浮出玻璃底
+// field-tap 让移动端的点按高度达到 44px（见 index.css）
 const inputCls =
   'w-full text-right bg-transparent text-[14px] text-ink placeholder:text-ink-tertiary ' +
-  'px-3 py-2 -mx-3 rounded-[10px] transition-colors duration-200 ' +
+  'px-3 py-2 -mx-3 rounded-[10px] transition-colors duration-200 field-tap ' +
   'hover:bg-white/50 focus:bg-white/75 focus:ring-1 focus:ring-accent/40'
 
 export default function SettingsPage() {
@@ -215,21 +216,22 @@ export default function SettingsPage() {
               <input type="text" value={profile?.company_teacher || ''} onChange={e => updateField('company_teacher', e.target.value)} className={inputCls} />
             </SettingRow>
             <SettingRow label="实习起止">
-              <div className="flex items-center gap-1.5">
+              {/* w-full + max-w 让两个输入框可伸缩：窄屏（360px）下固定 112px 会挤出 1px 横向滚动 */}
+              <div className="flex items-center gap-1.5 min-w-0">
                 <input
                   type="text"
                   value={profile?.start_date || ''}
                   onChange={e => updateField('start_date', e.target.value)}
                   placeholder="开始"
-                  className="w-28 text-right bg-transparent text-[14px] text-ink placeholder:text-ink-tertiary px-3 py-2 rounded-[10px] transition-colors duration-200 hover:bg-white/50 focus:bg-white/75 focus:ring-1 focus:ring-accent/40"
+                  className="w-full min-w-0 max-w-[112px] text-right bg-transparent text-[14px] text-ink placeholder:text-ink-tertiary px-3 py-2 rounded-[10px] transition-colors duration-200 field-tap hover:bg-white/50 focus:bg-white/75 focus:ring-1 focus:ring-accent/40"
                 />
-                <span className="text-ink-tertiary">—</span>
+                <span className="text-ink-tertiary shrink-0">—</span>
                 <input
                   type="text"
                   value={profile?.end_date || ''}
                   onChange={e => updateField('end_date', e.target.value)}
                   placeholder="结束"
-                  className="w-28 text-right bg-transparent text-[14px] text-ink placeholder:text-ink-tertiary px-3 py-2 rounded-[10px] transition-colors duration-200 hover:bg-white/50 focus:bg-white/75 focus:ring-1 focus:ring-accent/40"
+                  className="w-full min-w-0 max-w-[112px] text-right bg-transparent text-[14px] text-ink placeholder:text-ink-tertiary px-3 py-2 rounded-[10px] transition-colors duration-200 field-tap hover:bg-white/50 focus:bg-white/75 focus:ring-1 focus:ring-accent/40"
                 />
               </div>
             </SettingRow>
