@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>背景深浅对比</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1240px; background: #fff; }
+  body { -webkit-font-smoothing: antialiased; color: #1c1c1e;
+         font-family: -apple-system, "Segoe UI Variable Text", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+
+  .wrap { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; padding: 18px; }
+  .head { margin-bottom: 10px; padding-left: 2px; }
+  .head b { font-size: 14px; display: block; }
+  .head span { font-size: 11.5px; color: #6b7280; font-family: Consolas, monospace; }
+
+  .stage { position: relative; height: 430px; border-radius: 16px; overflow: hidden;
+           border: 1px solid rgba(0,0,0,.08); }
+
+  .mesh { position: absolute; inset: 0; }
+  .mesh i { position: absolute; display: block; border-radius: 50%; filter: blur(90px); }
+
+  .content { position: absolute; inset: 0; display: flex; flex-direction: column;
+             align-items: center; justify-content: center; gap: 18px; }
+
+  /* 与应用一致的玻璃 */
+  .glass {
+    position: relative;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,.72);
+    background: rgba(255,255,255,.38);
+    -webkit-backdrop-filter: blur(6px) saturate(170%);
+    backdrop-filter: blur(6px) saturate(170%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.9), inset 0 -1px 0 rgba(255,255,255,.28),
+                0 10px 40px -14px rgba(28,38,64,.24);
+  }
+  .glass::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,.62) 0%, rgba(255,255,255,.1) 24%, rgba(255,255,255,0) 52%);
+  }
+  .glass > * { position: relative; }
+
+  .card { width: 268px; padding: 16px 18px; }
+  .card h3 { font-size: 14px; font-weight: 600; margin-bottom: 9px; }
+  .card p { font-size: 13px; line-height: 1.8; }
+  .pill { padding: 12px 26px; border-radius: 999px; }
+  .pill b { font-size: 13.5px; color: #14324f; }
+
+  /* ============ A · 现状：非常淡 ============ */
+  .A .stage { background: linear-gradient(145deg,#e6edf6 0%,#eef1f6 38%,#f1eeea 72%,#edf1f4 100%); }
+  .A .mesh i:nth-child(1) { width: 560px; height: 560px; background: #8fb0d8; opacity: .74; top: -230px; left: -180px; }
+  .A .mesh i:nth-child(2) { width: 500px; height: 500px; background: #bfc9e2; opacity: .74; top: -200px; right: -140px; }
+  .A .mesh i:nth-child(3) { width: 540px; height: 540px; background: #9fc4d6; opacity: .74; bottom: -260px; left: 100px; }
+  .A .mesh i:nth-child(4) { width: 460px; height: 460px; background: #d9cdc3; opacity: .74; bottom: -210px; right: 10px; }
+
+  /* ============ B · 中等：色阶拉开 ============ */
+  .B .stage { background: linear-gradient(145deg,#d3e0f0 0%,#e2e9f4 38%,#eae3da 72%,#dfe8f0 100%); }
+  .B .mesh i:nth-child(1) { width: 600px; height: 600px; background: #6f96c8; opacity: .82; top: -240px; left: -190px; }
+  .B .mesh i:nth-child(2) { width: 540px; height: 540px; background: #a8b6dc; opacity: .82; top: -210px; right: -150px; }
+  .B .mesh i:nth-child(3) { width: 580px; height: 580px; background: #7fb2cc; opacity: .82; bottom: -280px; left: 110px; }
+  .B .mesh i:nth-child(4) { width: 500px; height: 500px; background: #cdbcaa; opacity: .82; bottom: -230px; right: 10px; }
+
+  /* ============ C · 明显：对比更强 ============ */
+  .C .stage { background: linear-gradient(145deg,#c3d6ec 0%,#d8e2f1 38%,#e5dbcd 72%,#d3e0ec 100%); }
+  .C .mesh i:nth-child(1) { width: 640px; height: 640px; background: #4f7cbb; opacity: .9; top: -250px; left: -200px; }
+  .C .mesh i:nth-child(2) { width: 580px; height: 580px; background: #93a6d6; opacity: .9; top: -220px; right: -160px; }
+  .C .mesh i:nth-child(3) { width: 620px; height: 620px; background: #5fa0c4; opacity: .9; bottom: -300px; left: 120px; }
+  .C .mesh i:nth-child(4) { width: 540px; height: 540px; background: #c2ab93; opacity: .9; bottom: -240px; right: 20px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <section class="A">
+    <div class="head"><b>A · 现状</b><span>光斑 opacity .74 / 底色近白</span></div>
+    <div class="stage">
+      <div class="mesh"><i></i><i></i><i></i><i></i></div>
+      <div class="content">
+        <div class="glass card">
+          <h3>今天发生了什么？</h3>
+          <p>上午参加了产线巡检，记录了贴片机的抛料率异常。</p>
+        </div>
+        <div class="glass pill"><b>整理今天</b></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="B">
+    <div class="head"><b>B · 中等加深</b><span>光斑 opacity .82 / 色阶拉开</span></div>
+    <div class="stage">
+      <div class="mesh"><i></i><i></i><i></i><i></i></div>
+      <div class="content">
+        <div class="glass card">
+          <h3>今天发生了什么？</h3>
+          <p>上午参加了产线巡检，记录了贴片机的抛料率异常。</p>
+        </div>
+        <div class="glass pill"><b>整理今天</b></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="C">
+    <div class="head"><b>C · 明显加深</b><span>光斑 opacity .9 / 对比最强</span></div>
+    <div class="stage">
+      <div class="mesh"><i></i><i></i><i></i><i></i></div>
+      <div class="content">
+        <div class="glass card">
+          <h3>今天发生了什么？</h3>
+          <p>上午参加了产线巡检，记录了贴片机的抛料率异常。</p>
+        </div>
+        <div class="glass pill"><b>整理今天</b></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

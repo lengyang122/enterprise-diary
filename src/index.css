@@ -7,8 +7,10 @@
    ============================================================ */
 
 html {
+  /* 浅色但有色阶：玻璃要有东西可透、有层次可对比，否则整页糊成一片白雾。
+     过淡 → 玻璃读不出来；过浓 → 显得活泼。这里取中间。 */
   background:
-    linear-gradient(145deg, #e6edf6 0%, #eef1f6 38%, #f1eeea 72%, #edf1f4 100%);
+    linear-gradient(145deg, #d3e0f0 0%, #e2e9f4 38%, #eae3da 72%, #dfe8f0 100%);
   background-attachment: fixed;
 }
 
@@ -101,21 +103,21 @@ button:focus {
   display: block;
   border-radius: 50%;
   filter: blur(96px);
-  opacity: 0.74;
+  opacity: 0.82;
   animation: meshDrift 26s cubic-bezier(0.32, 0.72, 0, 1) infinite alternate;
 }
 
 .glass-mesh i:nth-child(1) {
   width: 900px;
   height: 900px;
-  background: #8fb0d8;
+  background: #6f96c8;
   top: -360px;
   left: -240px;
 }
 .glass-mesh i:nth-child(2) {
   width: 820px;
   height: 820px;
-  background: #bfc9e2;
+  background: #a8b6dc;
   top: -300px;
   right: -200px;
   animation-duration: 31s;
@@ -124,7 +126,7 @@ button:focus {
 .glass-mesh i:nth-child(3) {
   width: 880px;
   height: 880px;
-  background: #9fc4d6;
+  background: #7fb2cc;
   bottom: -420px;
   left: 180px;
   animation-duration: 24s;
@@ -132,7 +134,7 @@ button:focus {
 .glass-mesh i:nth-child(4) {
   width: 720px;
   height: 720px;
-  background: #d9cdc3;
+  background: #cdbcaa;
   bottom: -340px;
   right: 40px;
   animation-duration: 29s;
