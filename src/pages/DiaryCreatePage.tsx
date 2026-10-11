@@ -358,8 +358,11 @@ export default function DiaryCreatePage() {
           .glass 的 backdrop-filter 会创建层叠上下文，下面的输入卡同样是独立上下文且
           z-index 为 auto，于是整张卡会按 DOM 顺序画在顶栏之上，把岗位下拉盖住。
           给顶栏提级，才能让弹出层真正浮在最上面。 */}
-      <div className="glass rounded-glass-lg relative z-20 flex items-center justify-between gap-4 px-5 py-3.5 mb-3.5">
-        <h2 className="text-[19px] font-bold text-ink tracking-tight">今天</h2>
+      <div className="glass rounded-glass-lg relative z-20 flex items-center justify-end gap-4 px-5 py-3.5 mb-3.5">
+        {/* 标题绝对居中：用 justify-between 时它会被右侧胶囊挤到左边 */}
+        <h2 className="absolute left-1/2 -translate-x-1/2 text-[19px] font-bold text-ink tracking-tight text-static">
+          今天
+        </h2>
         <div className="flex items-center gap-2">
           <EditableChip value={form.date} onChange={v => setForm(f => ({ ...f, date: v }))} />
           <PositionPicker
@@ -442,16 +445,21 @@ function PromptArea({
 }) {
   return (
     <div className="glass rounded-glass px-5 py-4 glass-hover focus-within:bg-white/70 focus-within:shadow-glass-ring">
-      <div className="flex items-center gap-2.5 mb-2.5">
-        <h3 className="text-[14.5px] font-semibold text-ink tracking-tight shrink-0">{title}</h3>
-        <span className="ml-auto hidden sm:block text-[11.5px] text-ink-tertiary">{hint}</span>
+      {/* 标题居中；提示小字绝对定位到右侧，不参与居中计算（本来就只有 ≥sm 显示） */}
+      <div className="relative mb-2.5">
+        <h3 className="text-center text-[14.5px] font-semibold text-ink tracking-tight text-static">
+          {title}
+        </h3>
+        <span className="hidden sm:block absolute right-0 top-1/2 -translate-y-1/2 text-[11.5px] text-ink-tertiary text-static">
+          {hint}
+        </span>
       </div>
       <textarea
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         rows={3}
-        className="w-full bg-transparent resize-none text-[14.5px] leading-[1.92] text-ink placeholder:text-ink-tertiary"
+        className="w-full bg-transparent resize-none text-[14.5px] leading-[1.92] text-ink placeholder:text-ink-tertiary ph-center"
       />
     </div>
   )
@@ -638,9 +646,13 @@ function ResultSection({
 
   return (
     <section className="glass rounded-glass px-5 py-4 md:px-6 md:py-5 glass-hover">
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <h3 className="text-[14px] font-semibold text-ink tracking-tight">{title}</h3>
-        <div className="flex items-center gap-2">
+      {/* 标题居中；字数与「重新生成」在窄屏另起一行居中，
+          宽屏绝对定位到右侧 —— 否则会与居中标题重叠 */}
+      <div className="relative mb-3">
+        <h3 className="text-center text-[14px] font-semibold text-ink tracking-tight text-static">
+          {title}
+        </h3>
+        <div className="mt-2 flex items-center justify-center gap-2 sm:mt-0 sm:absolute sm:right-0 sm:top-1/2 sm:-translate-y-1/2 sm:justify-end">
           <span className={`chip ${warn ? 'bg-warn-soft text-warn' : 'bg-accent-soft text-accent'}`}>
             {quality.count} 字
             {quality.tooShort && ` · 少于 ${quality.min}`}

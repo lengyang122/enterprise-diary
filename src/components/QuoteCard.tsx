@@ -14,8 +14,8 @@ export default function QuoteCard({
   const [quote, setQuote] = useState<Quote>(() => randomQuote())
 
   return (
-    <div className="glass rounded-glass flex items-start gap-3 px-5 py-3.5 mb-3.5">
-      <div className="min-w-0 flex-1">
+    <div className="glass rounded-glass flex items-start gap-3 px-5 py-3.5 mb-3.5 text-static">
+      <div className="min-w-0 flex-1 text-center">
         <p className="text-[13.5px] text-ink-secondary leading-relaxed">{quote.text}</p>
         <p className="text-[11.5px] text-ink-tertiary mt-1.5">— {quote.author}</p>
 
