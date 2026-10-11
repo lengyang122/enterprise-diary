@@ -77,6 +77,25 @@ button:focus {
   pointer-events: none;
 }
 
+/* ============================================================
+   细颗粒层 —— 真玻璃折射的前提
+   折射的本质是把身后的像素按边缘法线「搬移」。背景若是一块平滑渐变，
+   搬移前后一模一样，折射就等于零 —— 这也是为什么 Apple 的玻璃永远压在
+   照片、图标、滚动文字上。
+   这里铺一层极淡的颗粒（约 5% 不透明度），只补「高频细节」，不加色彩噪声。
+   ============================================================ */
+
+.glass-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.055;
+  background-repeat: repeat;
+  background-size: 160px 160px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
 .glass-mesh i {
   position: absolute;
   display: block;
@@ -139,13 +158,27 @@ button:focus {
     position: relative;
     border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.72);
-    background: rgba(255, 255, 255, 0.42);
+    background: rgba(255, 255, 255, 0.38);
+    /* 降级：不支持 backdrop-filter 引用 SVG 滤镜的浏览器（Safari / Firefox）用纯磨砂 */
     -webkit-backdrop-filter: blur(28px) saturate(185%);
     backdrop-filter: blur(28px) saturate(185%);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.9),
       inset 0 -1px 0 rgba(255, 255, 255, 0.28),
       0 10px 40px -14px rgba(28, 38, 64, 0.24);
+  }
+
+  /* 支持 url() 滤镜时（目前仅 Chromium）：叠加真折射 —— 边缘位移 + 色散。
+     保留一定 blur 维持玻璃的「体量感」；blur 过大则位移看不出，
+     所以这里用 6px 而非原来的 28px。
+
+     注意必须用 @supports 包起来：直接写 url() 一旦不生效，整条声明会被丢弃，
+     连磨砂都没了。 */
+  @supports (backdrop-filter: url(#probe)) {
+    .glass {
+      -webkit-backdrop-filter: blur(6px) url(#glass-refraction) saturate(170%);
+      backdrop-filter: blur(6px) url(#glass-refraction) saturate(170%);
+    }
   }
 
   /* 顶部白 → 透明的镜面渐变，玻璃的「液态」感主要来自它 */
@@ -319,6 +352,51 @@ button:focus {
   .chip,
   .chip-glass {
     user-select: none;
+  }
+
+  /* ===== 真液态玻璃（GlassSurface 组件用） =====
+     折射层由组件内联的 backdrop-filter: url(#滤镜) 负责，
+     这里只画玻璃本体：底色、边缘高光、顶部镜面渐变。 */
+  .glass-surface-sheen {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: rgba(255, 255, 255, 0.34);
+    border: 1px solid rgba(255, 255, 255, 0.66);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.92),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.3),
+      inset 1px 0 0 rgba(255, 255, 255, 0.4),
+      inset -1px 0 0 rgba(255, 255, 255, 0.4);
+  }
+
+  .glass-surface-sheen::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.62) 0%,
+      rgba(255, 255, 255, 0.1) 24%,
+      rgba(255, 255, 255, 0) 52%
+    );
+  }
+
+  /* 外投影放在宿主上，避免被自身的 overflow: hidden 裁掉 */
+  .glass-shadow {
+    box-shadow:
+      0 1px 1px -0.5px rgba(28, 38, 64, 0.1),
+      0 8px 32px -12px rgba(28, 38, 64, 0.28);
+  }
+
+  .glass-press {
+    cursor: pointer;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .glass-press:active {
+    transform: scale(0.97);
   }
 }
 

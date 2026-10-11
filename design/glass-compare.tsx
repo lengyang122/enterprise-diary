@@ -1,16 +1,16 @@
 // 玻璃质感对比页（开发期用，不进入应用产物）
-//   A = 我们现在的 .glass（backdrop-filter: blur + 白色渐变）
-//   B = liquid-glass-react（SVG feDisplacementMap 边缘折射 + 色散）
-// 玻璃后面必须有精细纹理，否则折射看不出来。
+//   A = 纯磨砂（blur 28px + 白色底）—— 改动前的做法
+//   B = 现在应用里的 .glass（叠加 SVG 折射滤镜）
+//
+// 用真实的 app CSS（脚本会把 dist 里构建好的 CSS 内联进来），B 侧直接就是线上那套样式。
+// 玻璃后面必须有高频纹理 —— 折射是把背景像素按边缘法线搬移，
+// 背景若是平滑渐变，搬移前后一模一样，效果等于零。
 import { createRoot } from 'react-dom/client'
-import LiquidGlass from 'liquid-glass-react'
 
-// 精细纹理：让玻璃边缘的位移/色散可见
 function Texture() {
-  const lines = Array.from({ length: 30 })
   return (
     <div className="texture">
-      {lines.map((_, i) => (
+      {Array.from({ length: 30 }).map((_, i) => (
         <div className="tex" key={i}>
           企业实践日记 · PQE 质量管控 · SMT 车间 · QCP · 5Why · AOI · 2026-10-11
         </div>
@@ -19,9 +19,9 @@ function Texture() {
   )
 }
 
-function Mesh() {
+function Mesh({ soft }: { soft?: boolean }) {
   return (
-    <div className="mesh" aria-hidden>
+    <div className={`mesh${soft ? ' mesh-soft' : ''}`} aria-hidden>
       <i />
       <i />
       <i />
@@ -30,70 +30,87 @@ function Mesh() {
   )
 }
 
-function Panel({ tag, note, children }: { tag: string; note: string; children: React.ReactNode }) {
+function Panel({
+  tag,
+  note,
+  soft,
+  children,
+}: {
+  tag: string
+  note: string
+  soft?: boolean
+  children: React.ReactNode
+}) {
   return (
-    <section className="panel">
+    <section>
       <div className="head">
         <b>{tag}</b>
         <span>{note}</span>
       </div>
       <div className="stage">
-        <Mesh />
-        <Texture />
-        <div className="overlay">{children}</div>
+        <Mesh soft={soft} />
+        {!soft && <Texture />}
+        <div className="overlay">
+          <div className="stack">{children}</div>
+        </div>
       </div>
     </section>
   )
 }
 
-function CardBody() {
+function Body() {
   return (
-    <div className="cardInner">
+    <div className="body">
       <h3>今天发生了什么？</h3>
       <p>上午参加了产线巡检，记录了贴片机的抛料率异常。</p>
     </div>
   )
 }
 
+const CARD = 'card'
+const PILL = 'pill'
+const NAV = 'miniNav'
+
 function App() {
   return (
     <div className="wrap">
-      <Panel tag="A · 现在的 .glass" note="backdrop-filter: blur(28px) saturate(185%) + 白色渐变">
-        <div className="row">
-          <div className="ours card">
-            <CardBody />
-          </div>
-          <div className="ours pillBtn">整理今天</div>
+      {/* 第一行：精细纹理背景 —— 折射是否成立，这里有细节可弯折 */}
+      <Panel tag="A · 纯磨砂 + 纹理背景" note="backdrop-filter: blur(28px) saturate(185%)">
+        <div className={`plainGlass ${CARD}`}>
+          <Body />
+        </div>
+        <div className={`plainGlass ${PILL}`}>
+          <span className="pillText">整理今天</span>
         </div>
       </Panel>
 
-      <Panel tag="B · liquid-glass-react" note="backdrop-filter: url(#svg滤镜) —— 边缘折射 + 色散">
-        <div className="row">
-          {/* 官方最简用法：不加包裹容器、不覆盖 style */}
-          <LiquidGlass
-            displacementScale={90}
-            blurAmount={0.12}
-            saturation={150}
-            aberrationIntensity={2}
-            cornerRadius={20}
-            padding="18px 20px"
-          >
-            <div className="plain">
-              <h3>今天发生了什么？</h3>
-              <p>上午参加了产线巡检，记录了贴片机的抛料率异常。</p>
-            </div>
-          </LiquidGlass>
+      <Panel tag="B · 折射滤镜 + 纹理背景" note="backdrop-filter: blur(6px) url(#glass-refraction)">
+        <div className={`glass ${CARD}`}>
+          <Body />
+        </div>
+        <div className={`glass ${PILL}`}>
+          <span className="pillText">整理今天</span>
+        </div>
+      </Panel>
 
-          <LiquidGlass
-            displacementScale={70}
-            blurAmount={0.1}
-            saturation={150}
-            aberrationIntensity={2.5}
-            cornerRadius={100}
-            padding="14px 30px"
-          >
-            <span className="btnText">整理今天</span>
-          </LiquidGlass>
+      {/* 第二行：柔和渐变背景（应用的真实情况）—— 用来看折射还剩多少 */}
+      <Panel tag="C · 纯磨砂 + 柔和渐变" note="应用的实际情况：背景无高频细节" soft>
+        <div className={`plainGlass ${CARD}`}>
+          <Body />
+        </div>
+        <div className={`plainGlass ${NAV}`}>
+          <span className="miniItem miniActive">新建日记</span>
+          <span className="miniItem">历史记录</span>
+        </div>
+      </Panel>
+
+      <Panel tag="D · 折射滤镜 + 柔和渐变" note="折射基本不可见 —— 没有细节可弯折" soft>
+        <div className={`glass ${CARD}`}>
+          <Body />
+        </div>
+        <div className={`glass ${NAV}`}>
+          <span className="miniItem miniActive">新建日记</span>
+          <span className="miniItem">历史记录</span>
         </div>
       </Panel>
     </div>

@@ -191,6 +191,39 @@ localStorage 键名：
 - **可访问性**：`:focus-visible` 只在键盘聚焦时显示焦点环；
   `prefers-reduced-motion` 下自动关闭光斑漂移、入场动画与回弹。
 
+### 折射滤镜（真液态玻璃）
+
+`.glass` 在 Chromium 上会叠加一层**真折射**，不只是磨砂：
+
+```
+backdrop-filter: blur(28px) saturate(185%);                        ← 降级（Safari / Firefox）
+@supports (backdrop-filter: url(#probe)) {
+  backdrop-filter: blur(6px) url(#glass-refraction) saturate(170%); ← 折射
+}
+```
+
+原理（`src/components/GlassFilterDefs.tsx` + `src/lib/displacementMap.ts`）：
+
+1. **位移贴图**用 canvas 按圆角矩形程序化生成（不打包 base64 图片）：
+   R 通道 = X 位移、B 通道 = Y 位移，128 = 不位移；中心为中性值，越贴边越强
+2. `feDisplacementMap` 按贴图采样背景 → **边缘发生位移**
+3. R/G/B 三通道用不同 scale 各做一次，再 `screen` 混合 → **边缘色散**
+4. 贴图用 `preserveAspectRatio="none"` 拉伸，所以**一份全局滤镜就覆盖所有尺寸的元素**，
+   不必改动各处 JSX（`GlassBackground` 里挂一次即可）
+
+> ⚠️ **折射需要背景有高频细节才看得见。** 折射的本质是把身后的像素按边缘法线「搬移」，
+> 背景若是一块平滑渐变，搬移前后一模一样，效果等于零 —— 这也是为什么 Apple 的玻璃永远
+> 压在照片、图标、滚动文字上。
+> 本项目背景是低饱和柔和渐变（刻意如此），所以折射**实际上基本不可见**；这一层的实际收益
+> 主要是边缘色散带来的「玻璃感」与更通透的观感。想让折射真正显现，需要给背景加纹理 ——
+> 这就是 `.glass-grain` 细颗粒层的作用（约 5.5% 透明度，只补细节、不加色彩噪声）。
+>
+> 对照实验见 `design/glass-compare.tsx` + `scripts/compare-glass.mjs`（`node scripts/compare-glass.mjs`）：
+> 输出四格图 ——「纯磨砂 / 折射滤镜」×「纹理背景 / 柔和渐变」，一眼看清差异与边界。
+
+> ⚠️ **`@supports` 不是可选的**：直接写 `url()` 一旦浏览器不支持，整条声明会被丢弃，
+> 连原有的磨砂都没了，玻璃会彻底消失。
+
 > ⚠️ **层叠陷阱**：`backdrop-filter` 会让元素创建**层叠上下文**。顶部栏与下方卡片各自成为独立
 > 上下文且 `z-index: auto` 时，卡片会按 DOM 顺序画在顶栏之上，把顶栏里的下拉弹层盖住 ——
 > 弹层自身的 `z-index` 出不了父上下文。解决方式是给顶部栏本身提级（如 `relative z-20`）。
