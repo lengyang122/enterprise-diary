@@ -512,3 +512,178 @@ button:focus {
     min-height: 44px;
   }
 }
+
+/* ============================================================
+   进入页（假登录）—— 简约商务
+   刻意不复用 .glass：全站玻璃偏「通透轻盈」，这一页要的是干净克制，
+   所以单独一套更收敛的表面参数（圆角更小、渐变更淡、饱和度更低）。
+   ============================================================ */
+
+/* 背景收一收：光斑淡一些、颗粒细一些，整体更沉稳 */
+.auth-page .glass-mesh i {
+  opacity: 0.48;
+}
+.auth-page .glass-grain {
+  opacity: 0.032;
+}
+
+/* 卡片：小圆角 + 细磨砂 + 极淡的顶部渐变 */
+.auth-card {
+  position: relative;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  background: rgba(255, 255, 255, 0.34);
+  -webkit-backdrop-filter: blur(24px) saturate(128%);
+  backdrop-filter: blur(24px) saturate(128%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 1px 2px rgba(28, 38, 64, 0.04),
+    0 16px 40px -22px rgba(28, 38, 64, 0.32);
+}
+
+.auth-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0) 44%);
+}
+
+/* 顶部标识：中性底 + 沉稳蓝，代替原来的彩色渐变图标 */
+.auth-mark {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: #2f6fd0;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(28, 38, 64, 0.06);
+}
+
+/* Tab：选中态用半透明白，不做纯白高对比 */
+.auth-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.48);
+}
+
+.auth-tab {
+  flex: 1;
+  min-height: 32px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  color: #6b7280;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.auth-tab:hover {
+  color: #1c1c1e;
+}
+
+.auth-tab[data-active='true'] {
+  background: rgba(255, 255, 255, 0.6);
+  color: #1c1c1e;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(28, 38, 64, 0.07);
+}
+
+/* 输入框：边框弱化，聚焦时淡蓝高亮 */
+.auth-field {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.4);
+  padding: 11px 13px;
+  font-size: 14px;
+  color: #1c1c1e;
+  outline: none;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.auth-field::placeholder {
+  color: #9aa3af;
+}
+
+.auth-field:hover {
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.auth-field:focus {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(10, 132, 255, 0.42);
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.1);
+}
+
+/* 主按钮：降低亮度的蓝，hover 轻微加深 */
+.auth-submit {
+  width: 100%;
+  border-radius: 10px;
+  padding: 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #fff;
+  background: #3b7dd8;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 1px 2px rgba(28, 38, 64, 0.1);
+  transition: background-color 0.18s ease;
+}
+
+.auth-submit:hover:not(:disabled) {
+  background: #336fc4;
+}
+
+.auth-submit:active:not(:disabled) {
+  background: #2d63b0;
+}
+
+.auth-submit:disabled {
+  background: #9aa8bd;
+  cursor: not-allowed;
+}
+
+.auth-submit:focus-visible {
+  outline: 2px solid rgba(10, 132, 255, 0.5);
+  outline-offset: 2px;
+}
+
+/* 忘记密码：弱化到接近装饰 */
+.auth-link {
+  font-size: 11.5px;
+  color: #a3aab5;
+  transition: color 0.2s ease;
+}
+
+.auth-link:hover {
+  color: #6b7280;
+}
+
+/* 触屏设备补足触控高度 */
+@media (hover: none) and (pointer: coarse) {
+  .auth-tab,
+  .auth-field,
+  .auth-submit {
+    min-height: 44px;
+  }
+
+  .auth-link {
+    min-height: 44px;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}

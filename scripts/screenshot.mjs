@@ -120,6 +120,19 @@ const SCENARIOS = [
   // ===== 首次进入页（假登录）=====
   { name: '00a-welcome-form', route: '/welcome', skipEntered: true, seed: [] },
   {
+    // 填了内容 + 焦点在第一格：看「启用态按钮 + 输入框聚焦高亮」
+    name: '00a2-welcome-filled',
+    route: '/welcome',
+    skipEntered: true,
+    seed: [],
+    action: async page => {
+      await page.getByPlaceholder('比如：冷阳').fill('冷阳')
+      await page.getByPlaceholder('比如：PQE 质量工程师').fill('PQE 质量工程师')
+      await page.getByPlaceholder('比如：冷阳').focus()
+      await page.waitForTimeout(300)
+    },
+  },
+  {
     name: '00b-welcome-reveal',
     route: '/welcome',
     skipEntered: true,
@@ -127,8 +140,8 @@ const SCENARIOS = [
     action: async page => {
       await page.getByPlaceholder('比如：冷阳').fill('冷阳')
       await page.getByPlaceholder('比如：PQE 质量工程师').fill('PQE 质量工程师')
-      // exact 精确匹配提交按钮，避免和「登录」标签页撞名
-      await page.getByRole('button', { name: '登 录', exact: true }).click()
+      // 按类名定位：提交按钮与「登录」标签页同名，用角色会撞
+      await page.locator('.auth-submit').click()
       await page.waitForTimeout(1600)
     },
   },

@@ -12,6 +12,10 @@
 // 既保住了「填表 → 提交 → 揭晓」的仪式感，填的内容还真的有用
 // —— 直接写进个人资料，用于 Word 导出的署名栏。
 //
+// 视觉：不复用全站的 .glass（那套偏通透轻盈），
+// 改用 index.css 里独立的 .auth-* 一套更收敛的参数 —— 圆角更小、
+// 渐变更淡、饱和度更低，目标是「简约商务、干净克制」而不是网页模板感。
+//
 // 只出现一次：走过就写 localStorage 标记，之后直进主页；
 // 设置页提供「重新观看」。
 // ============================================================
@@ -19,15 +23,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import GlassBackground from '../components/GlassBackground'
-import { DocIcon, SparkIcon } from '../components/icons'
+import { BriefcaseIcon, SparkIcon } from '../components/icons'
 import { EMPTY_PROFILE, getProfile, markEntered, saveProfile } from '../lib/storage'
 
 type Stage = 'form' | 'checking' | 'reveal'
-
-const FIELD =
-  'w-full bg-white/55 border border-white/70 rounded-[13px] px-4 py-3 text-[14.5px] text-ink ' +
-  'placeholder:text-ink-tertiary outline-none transition-colors duration-200 ' +
-  'focus:bg-white/80 focus:ring-1 focus:ring-accent/40'
 
 export default function WelcomePage() {
   const navigate = useNavigate()
@@ -66,39 +65,29 @@ export default function WelcomePage() {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center px-4 py-10">
+    <div className="auth-page relative min-h-screen flex items-center justify-center px-4 py-10">
       <GlassBackground />
 
-      <main className="relative z-10 w-full max-w-[400px]">
+      <main className="relative z-10 w-full max-w-[380px]">
         {stage === 'form' && (
-          <section className="glass rounded-glass-lg px-7 py-8 animate-riseIn" key="form">
-            <header className="flex flex-col items-center text-center mb-7">
-              <span
-                className="w-12 h-12 rounded-[16px] text-white grid place-items-center mb-3.5"
-                style={{
-                  background: 'linear-gradient(160deg,#4EA8FF,#0A84FF)',
-                  boxShadow:
-                    '0 10px 26px -8px rgba(10,132,255,.85), inset 0 1px 0 rgba(255,255,255,.6)',
-                }}
-              >
-                <DocIcon size={24} />
+          <section className="auth-card px-6 py-6 animate-fadeIn" key="form">
+            <header className="flex flex-col items-center text-center mb-6">
+              <span className="auth-mark mb-3.5">
+                <BriefcaseIcon size={20} />
               </span>
-              <h1 className="text-[17px] font-semibold tracking-tight">企业实践日记</h1>
-              <p className="text-[12px] text-ink-tertiary mt-1.5">记录每一天的成长</p>
+              <h1 className="text-[16px] font-semibold tracking-tight">企业实践日记</h1>
+              <p className="text-[11.5px] text-ink-tertiary mt-1">记录每一天的成长</p>
             </header>
 
             {/* 登录 / 注册 切换 —— 两边行为完全一样，只为像那么回事 */}
-            <div className="flex gap-1 p-1 rounded-[13px] bg-white/45 border border-white/60 mb-6">
+            <div className="auth-tabs mb-5">
               {(['login', 'register'] as const).map(k => (
                 <button
                   key={k}
                   type="button"
+                  data-active={tab === k}
                   onClick={() => setTab(k)}
-                  className={`flex-1 tap-min py-2 rounded-[10px] text-[13px] transition-all duration-300 ease-ios ${
-                    tab === k
-                      ? 'bg-white/85 text-ink font-semibold shadow-glass-sm'
-                      : 'text-ink-secondary hover:text-ink'
-                  }`}
+                  className="auth-tab"
                 >
                   {k === 'login' ? '登录' : '注册'}
                 </button>
@@ -110,51 +99,41 @@ export default function WelcomePage() {
                 e.preventDefault()
                 start()
               }}
-              className="space-y-4"
+              className="space-y-2.5"
             >
-              <label className="block">
-                <span className="block text-[12.5px] text-ink-secondary mb-2">你的名字</span>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  placeholder="比如：冷阳"
-                  autoComplete="off"
-                  className={FIELD}
-                />
-              </label>
+              {/* 字段说明直接写进 placeholder，不在上方单列标签 */}
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="姓名，比如：冷阳"
+                autoComplete="off"
+                aria-label="姓名"
+                className="auth-field"
+              />
+              <input
+                type="text"
+                value={position}
+                onChange={e => setPosition(e.target.value)}
+                placeholder="实习岗位（可留空），比如：PQE 质量工程师"
+                autoComplete="off"
+                aria-label="实习岗位"
+                className="auth-field"
+              />
 
-              <label className="block">
-                <span className="block text-[12.5px] text-ink-secondary mb-2">
-                  实习岗位 <span className="text-ink-tertiary">（可留空）</span>
-                </span>
-                <input
-                  type="text"
-                  value={position}
-                  onChange={e => setPosition(e.target.value)}
-                  placeholder="比如：PQE 质量工程师"
-                  autoComplete="off"
-                  className={FIELD}
-                />
-              </label>
-
-              <button
-                type="submit"
-                disabled={!canSubmit}
-                className="btn-primary w-full justify-center py-3.5 mt-1 disabled:opacity-45 disabled:cursor-not-allowed"
-              >
-                {tab === 'login' ? '登 录' : '注 册'}
+              <button type="submit" disabled={!canSubmit} className="auth-submit !mt-3.5">
+                {tab === 'login' ? '登录' : '注册'}
               </button>
             </form>
 
-            <div className="flex justify-center mt-5">
+            <div className="text-center mt-3">
               <button
                 type="button"
                 onClick={() => {
                   // 「忘记密码」也通向揭晓 —— 反正没有密码可以忘
                   if (canSubmit) start()
                 }}
-                className="tap-min inline-flex items-center px-4 text-[12px] text-ink-tertiary hover:text-accent transition-colors duration-200"
+                className="auth-link"
               >
                 忘记密码？
               </button>
@@ -165,7 +144,7 @@ export default function WelcomePage() {
         {stage === 'checking' && (
           <section
             key="checking"
-            className="glass rounded-glass-lg px-7 py-14 flex flex-col items-center animate-fadeIn"
+            className="auth-card px-6 py-14 flex flex-col items-center animate-fadeIn"
           >
             <div className="flex items-center gap-1.5 mb-6">
               {[0, 1, 2].map(i => (
@@ -181,20 +160,18 @@ export default function WelcomePage() {
         )}
 
         {stage === 'reveal' && (
-          <section className="glass rounded-glass-lg px-7 py-8 animate-popIn" key="reveal">
+          <section className="auth-card px-6 py-6 animate-fadeIn" key="reveal">
             <header className="flex flex-col items-center text-center mb-5">
-              <span className="w-12 h-12 rounded-full grid place-items-center mb-4 text-accent bg-accent-soft">
-                <SparkIcon size={24} />
+              <span className="auth-mark mb-3.5" style={{ color: '#0A84FF' }}>
+                <SparkIcon size={20} />
               </span>
-              <h1 className="text-[19px] font-semibold tracking-tight">骗到你了 😄</h1>
-              <p className="text-[13px] text-ink-secondary mt-2">这里没有账号，也没有服务器</p>
+              <h1 className="text-[18px] font-semibold tracking-tight">骗到你了 😄</h1>
+              <p className="text-[12.5px] text-ink-secondary mt-1.5">这里没有账号，也没有服务器</p>
             </header>
 
-            <div className="text-[13.5px] text-ink-secondary leading-relaxed space-y-3">
-              <p>
-                你刚才填的不是账号 —— 是这本日记的扉页署名。
-              </p>
-              <p className="text-[12.5px] text-ink-tertiary leading-relaxed">
+            <div className="text-[13px] text-ink-secondary leading-relaxed space-y-2.5">
+              <p>你刚才填的不是账号 —— 是这本日记的扉页署名。</p>
+              <p className="text-[12px] text-ink-tertiary leading-relaxed">
                 所有记录只存在这台设备的浏览器里，不会上传到任何服务器，也没有任何账号可以登录。
                 <br />
                 <span className="text-ink-secondary">
@@ -204,11 +181,7 @@ export default function WelcomePage() {
               </p>
             </div>
 
-            <button
-              onClick={enter}
-              disabled={saving}
-              className="btn-primary w-full justify-center py-3.5 mt-7 disabled:opacity-60"
-            >
+            <button onClick={enter} disabled={saving} className="auth-submit !mt-6">
               {saving ? '正在进入…' : '开始记录'}
             </button>
           </section>

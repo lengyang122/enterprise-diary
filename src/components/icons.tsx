@@ -60,6 +60,17 @@ export function DocIcon(props: IconProps) {
   )
 }
 
+/** 商务风格：公文箱。线条更少、更几何，用于企业场景的标识。 */
+export function BriefcaseIcon(props: IconProps) {
+  return (
+    <svg {...svgProps(props)}>
+      <rect x="2.9" y="6.5" width="14.2" height="10.2" rx="1.6" />
+      <path d="M7.5 6.5V5.3a1.5 1.5 0 0 1 1.5-1.5h2a1.5 1.5 0 0 1 1.5 1.5v1.2" />
+      <path d="M2.9 10.9h14.2" />
+    </svg>
+  )
+}
+
 export function DownloadIcon(props: IconProps) {
   return (
     <svg {...svgProps(props)}>
