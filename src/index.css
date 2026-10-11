@@ -355,8 +355,16 @@ button:focus {
    ============================================================ */
 
 @media (prefers-reduced-motion: reduce) {
-  .glass-mesh i {
-    animation: none;
+  /* .auth-page .glass-mesh i 的优先级比 .glass-mesh i 高，
+     所以进入页的呼吸动画必须在这里单独覆盖，否则关不掉 */
+  .glass-mesh i,
+  .auth-page .glass-mesh i {
+    animation: none !important;
+  }
+  /* 动画停掉后会退回全局的 opacity: 0.82，比呼吸区间（0.32–0.58）亮得多。
+     这里给它一个静止的中间值，保证关掉动效的人看到的亮度一致。 */
+  .auth-page .glass-mesh i {
+    opacity: 0.45;
   }
   .animate-riseIn,
   .animate-popIn,
@@ -527,9 +535,39 @@ button:focus {
    所以单独一套更收敛的表面参数（圆角更小、渐变更淡、饱和度更低）。
    ============================================================ */
 
-/* 背景收一收：光斑淡一些、颗粒细一些，整体更沉稳 */
+/* 进入页的光斑：换成「呼吸」——透明度与缩放同步缓慢起伏。
+   用一个动画同时管 opacity 与 transform，避免与 meshDrift 争抢 transform
+   （两个动画作用于同一属性时，只有后者生效）。
+   四个光斑用不同的时长与负延迟错开相位，才不会整齐划一地一起亮一起暗。 */
+@keyframes authBreath {
+  0% {
+    opacity: 0.32;
+    transform: translate3d(0, 0, 0) scale(0.93);
+  }
+  100% {
+    opacity: 0.58;
+    transform: translate3d(1.5%, -1.5%, 0) scale(1.07);
+  }
+}
+
 .auth-page .glass-mesh i {
-  opacity: 0.48;
+  animation: authBreath 9s ease-in-out infinite alternate;
+}
+
+.auth-page .glass-mesh i:nth-child(1) {
+  animation-duration: 9s;
+}
+.auth-page .glass-mesh i:nth-child(2) {
+  animation-duration: 11.5s;
+  animation-delay: -2.5s;
+}
+.auth-page .glass-mesh i:nth-child(3) {
+  animation-duration: 8s;
+  animation-delay: -4.5s;
+}
+.auth-page .glass-mesh i:nth-child(4) {
+  animation-duration: 13s;
+  animation-delay: -7s;
 }
 .auth-page .glass-grain {
   opacity: 0.032;
