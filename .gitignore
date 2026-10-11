@@ -16,3 +16,6 @@ dist
 
 # 界面截图产物（开发期人工核对用）
 screenshots
+
+# 背景动效采集的临时帧
+.breath-frames/

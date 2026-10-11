@@ -552,36 +552,42 @@ button:focus {
 /* 进入页的光斑：换成「呼吸」——透明度与缩放同步缓慢起伏。
    用一个动画同时管 opacity 与 transform，避免与 meshDrift 争抢 transform
    （两个动画作用于同一属性时，只有后者生效）。
-   四个光斑用不同的时长与负延迟错开相位，才不会整齐划一地一起亮一起暗。 */
+   四个光斑用不同的时长与负延迟错开相位，才不会整齐划一地一起亮一起暗。
+
+   幅度与时长的取值依据（不是拍脑袋）：
+   最初用 8–13s、opacity 0.32–0.58，截图逐帧比对发现一个周期内平均像素差
+   确实有 15/255，但摊到 7 秒只有每秒约 2 个单位 —— 人眼对缓慢连续变化会适应，
+   盯着看几乎察觉不到。所以把周期压到 5.5–8.5s、幅度提到 0.26–0.70，
+   把「每秒变化量」抬到可感知区间。 */
 @keyframes authBreath {
   0% {
-    opacity: 0.32;
-    transform: translate3d(0, 0, 0) scale(0.93);
+    opacity: 0.26;
+    transform: translate3d(0, 0, 0) scale(0.9);
   }
   100% {
-    opacity: 0.58;
-    transform: translate3d(1.5%, -1.5%, 0) scale(1.07);
+    opacity: 0.7;
+    transform: translate3d(2.5%, -2.5%, 0) scale(1.12);
   }
 }
 
 .auth-page .glass-mesh i {
-  animation: authBreath 9s ease-in-out infinite alternate;
+  animation: authBreath 6s ease-in-out infinite alternate;
 }
 
 .auth-page .glass-mesh i:nth-child(1) {
-  animation-duration: 9s;
+  animation-duration: 6s;
 }
 .auth-page .glass-mesh i:nth-child(2) {
-  animation-duration: 11.5s;
-  animation-delay: -2.5s;
+  animation-duration: 7.5s;
+  animation-delay: -1.8s;
 }
 .auth-page .glass-mesh i:nth-child(3) {
-  animation-duration: 8s;
-  animation-delay: -4.5s;
+  animation-duration: 5.5s;
+  animation-delay: -3.2s;
 }
 .auth-page .glass-mesh i:nth-child(4) {
-  animation-duration: 13s;
-  animation-delay: -7s;
+  animation-duration: 8.5s;
+  animation-delay: -5s;
 }
 .auth-page .glass-grain {
   opacity: 0.032;
