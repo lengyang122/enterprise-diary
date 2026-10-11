@@ -6,6 +6,7 @@
 import { useEffect } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { BriefcaseIcon, WriteIcon, HistoryIcon, SettingsIcon } from '../icons'
+import { useBodyScrollLock } from '../../lib/useBodyScrollLock'
 
 const items = [
   { path: '/', label: '新建日记', Icon: WriteIcon },
@@ -34,14 +35,7 @@ export default function NavDrawer({ open, onClose }: { open: boolean; onClose: (
   }, [open, onClose])
 
   // 展开时锁掉页面滚动，避免抽屉后面还能滚
-  useEffect(() => {
-    if (!open) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = prev
-    }
-  }, [open])
+  useBodyScrollLock(open)
 
   return (
     <>

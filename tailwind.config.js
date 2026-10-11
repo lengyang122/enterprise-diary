@@ -94,9 +94,21 @@ export default {
         },
       },
       animation: {
-        riseIn: 'riseIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both',
-        fadeIn: 'fadeIn 0.3s cubic-bezier(0.32,0.72,0,1) both',
-        popIn: 'popIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both',
+        // 一律用 backwards 而不是 both。
+        //
+        // fill-mode: both 会让元素在动画结束后「保留最后一帧的样式」，
+        // 而 riseIn / popIn 的最后一帧带 transform: translateY(0) scale(1) ——
+        // 那不是 none，于是元素**永久成为 position: fixed 的包含块**。
+        // 后果：这个容器里所有 fixed 元素（详情弹窗、轻提示、遮罩）
+        // 都不再相对视口定位，而是相对这个容器 —— 弹窗会跟着页面滚走、
+        // 遮罩会撑成整个文档高度、内部也无法滚动。
+        // 已经被这个坑咬过三次（「已保存」提示、历史详情弹窗、抽屉遮罩），
+        // 在这里一次性修掉，而不是每处都加 portal 绕开。
+        //
+        // backwards 只保证动画开始前先应用首帧（避免闪一下），结束后不保留任何样式。
+        riseIn: 'riseIn 0.5s cubic-bezier(0.34,1.56,0.64,1) backwards',
+        fadeIn: 'fadeIn 0.3s cubic-bezier(0.32,0.72,0,1) backwards',
+        popIn: 'popIn 0.45s cubic-bezier(0.34,1.56,0.64,1) backwards',
         softPulse: 'softPulse 1.5s ease-in-out infinite',
         drift: 'drift 26s cubic-bezier(0.32,0.72,0,1) infinite alternate',
       },

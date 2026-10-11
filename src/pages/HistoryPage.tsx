@@ -9,6 +9,7 @@ import {
   describeExportCheck,
 } from '../lib/word'
 import { WriteIcon, DownloadIcon, TrashIcon, CloseIcon } from '../components/icons'
+import { useBodyScrollLock } from '../lib/useBodyScrollLock'
 import type { Profile, DiaryEntry, DiaryWordData } from '../types'
 
 // 从日期字符串解析 "8月23日" 或旧格式 "7.17" → { month, day }
@@ -42,6 +43,9 @@ export default function HistoryPage() {
   const [deleting, setDeleting] = useState<string | null>(null)
   const [exportError, setExportError] = useState('')
   const [exporting, setExporting] = useState(false)
+
+  // 详情弹窗展开时锁住页面滚动：否则滚轮会穿过弹窗去滚身后的列表
+  useBodyScrollLock(Boolean(selectedEntry))
 
   useEffect(() => {
     loadData()
@@ -246,15 +250,18 @@ export default function HistoryPage() {
         </div>
       )}
 
-      {/* 详情弹窗 */}
+      {/* 详情弹窗
+          - useBodyScrollLock：不锁的话滚轮会穿过弹窗去滚身后的列表页
+          - overscroll-contain：弹窗自己滚到底后不再把滚动链传给页面
+          - 遮罩加深一点，弹窗才浮得起来（原来 20% 太浅，背景糊成一片） */}
       {selectedEntry && (
         <div
-          className="fixed inset-0 z-50 bg-ink/20 backdrop-blur-[6px] flex items-start justify-center overflow-y-auto px-4 py-10 md:py-16 animate-fadeIn"
+          className="fixed inset-0 z-50 bg-ink/35 backdrop-blur-[10px] overscroll-contain flex items-start justify-center overflow-y-auto px-4 py-10 md:py-16 animate-fadeIn"
           onClick={() => setSelectedEntry(null)}
         >
           <div
-            className="glass rounded-glass-lg w-full max-w-[660px] p-6 md:p-9 animate-popIn"
-            style={{ background: 'rgba(255,255,255,0.72)' }}
+            className="glass rounded-glass-lg shadow-glass-lift w-full max-w-[660px] p-6 md:p-9 animate-popIn"
+            style={{ background: 'rgba(255,255,255,0.78)' }}
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4 mb-7">
