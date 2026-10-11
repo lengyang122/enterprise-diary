@@ -357,18 +357,29 @@ export default function DiaryCreatePage() {
   }
 
   // === 输入状态 ===
+  // 用 .entry-center 在可视区里垂直居中：之前内容贴着顶部，页面显得头重脚轻，
+  // 而且第一眼看不出这一页是干什么的。
   return (
-    <div className="animate-riseIn">
-      {/* 随机文案（草稿恢复提示内联在这里） */}
-      <QuoteCard
-        notice={restored ? '已恢复上次未完成的草稿' : undefined}
-        onDismissNotice={() => setRestored(false)}
-      />
+    <div className="animate-riseIn entry-center">
+      <div className="w-full">
+        {/* 标题与说明：进页面第一眼要能看懂这里能做什么 */}
+        <header className="text-center mb-5">
+          <h1 className="text-[26px] font-bold text-ink tracking-tight text-static">今天</h1>
+          <p className="text-[13.5px] text-ink-secondary mt-2 text-static">
+            写几句今天的事，AI 帮你整理成日记
+          </p>
+        </header>
 
-      {/* 唯一的输入卡 —— z-20 是必需的：
-          .glass 的 backdrop-filter 会创建层叠上下文，后面若还有独立上下文且 z-index
-          为 auto 的元素，会按 DOM 顺序画在它之上，把岗位下拉盖住。提级才能让弹层浮在最上面。 */}
-      <div className="glass rounded-glass-lg relative z-20 px-5 py-5 md:px-7 md:py-6">
+        {/* 随机文案（草稿恢复提示内联在这里） */}
+        <QuoteCard
+          notice={restored ? '已恢复上次未完成的草稿' : undefined}
+          onDismissNotice={() => setRestored(false)}
+        />
+
+        {/* 唯一的输入卡 —— z-20 是必需的：
+            .glass 的 backdrop-filter 会创建层叠上下文，后面若还有独立上下文且 z-index
+            为 auto 的元素，会按 DOM 顺序画在它之上，把岗位下拉盖住。提级才能让弹层浮在最上面。 */}
+        <div className="glass rounded-glass-lg relative z-20 px-5 py-5 md:px-7 md:py-6">
         {/* 日期与岗位放进卡片内部，省掉一条顶栏 —— 输入态要的就是「只有一个框」 */}
         <div className="flex items-center justify-center gap-2 mb-4">
           <EditableChip value={form.date} onChange={v => setForm(f => ({ ...f, date: v }))} />
@@ -397,21 +408,21 @@ export default function DiaryCreatePage() {
         </div>
       )}
 
-      {/* 主操作 */}
-      <div className="flex flex-col items-center pt-6">
-        <button onClick={handleGenerate} className="btn-primary px-8 py-3.5">
-          <PlusIcon size={16} />
+      {/* 主操作：按钮做大一些，它是这一页唯一的主操作 */}
+      <div className="flex justify-center pt-7">
+        <button onClick={handleGenerate} className="btn-primary px-12 py-4 text-[15.5px]">
+          <PlusIcon size={18} />
           整理今天
         </button>
-        <p className="text-[11.5px] text-ink-tertiary mt-3">点一下，AI 会把它整理成规范的三段式日记</p>
       </div>
 
       {profile && (
-        <p className="text-center text-[12px] text-ink-tertiary mt-5">
+        <p className="text-center text-[12px] text-ink-tertiary mt-6">
           {profile.name}
           {profile.company ? ` · ${profile.company}` : ''}
         </p>
       )}
+      </div>
     </div>
   )
 }

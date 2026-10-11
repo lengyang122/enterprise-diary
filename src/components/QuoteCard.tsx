@@ -18,10 +18,10 @@ export default function QuoteCard({
 
   return (
     <div className="text-center mb-7 text-static">
-      <p className="text-[15px] text-ink-secondary leading-relaxed">{quote.text}</p>
+      <p className="text-[16px] text-ink-secondary leading-[1.75]">{quote.text}</p>
 
-      <div className="flex items-center justify-center gap-1 mt-2">
-        <p className="text-[11.5px] text-ink-tertiary">— {quote.author}</p>
+      <div className="flex items-center justify-center gap-1 mt-2.5">
+        <p className="text-[12px] text-ink-tertiary">— {quote.author}</p>
         {/* 图标只有 12px，点击区靠 tap-min 在触屏上撑到 44px */}
         <button
           onClick={() => setQuote(q => randomQuote(q.text))}

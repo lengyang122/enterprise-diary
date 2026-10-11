@@ -531,6 +531,27 @@ button:focus {
 }
 
 /* ============================================================
+   输入态的垂直居中
+   内容原本贴着顶部，页面头重脚轻、也不容易一眼看懂这页是干什么的。
+   数值与 .glass-safe-content 的上下 padding 对齐。
+   ============================================================ */
+
+.entry-center {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: calc(
+    100dvh - 4.5rem - 4rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+  );
+}
+
+@media (min-width: 768px) {
+  .entry-center {
+    min-height: calc(100dvh - 5.25rem - 4rem);
+  }
+}
+
+/* ============================================================
    生成中状态
    ============================================================ */
 
