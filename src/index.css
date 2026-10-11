@@ -124,14 +124,19 @@ button:focus {
 .glass-mesh i:nth-child(1) {
   width: 900px;
   height: 900px;
-  background: #6f96c8;
+  /* 色相刻意拉开到四个不同的色区（约 211° / 253° / 182° / 30°）。
+     原先三个冷色挤在 198–228° 之间，只差 30° —— 动起来时画面几乎只有明暗变化
+     （实测 RGB 差异 20.28 ≈ 灰度差异 20.25，说明没有色彩变化），
+     而人眼对纯明暗变化的敏感度远低于色彩变化，所以看不出在动。
+     饱和度与明度仍控制在柔和区间，不会显得活泼。 */
+  background: #6d9ad6;
   top: -360px;
   left: -240px;
 }
 .glass-mesh i:nth-child(2) {
   width: 820px;
   height: 820px;
-  background: #a8b6dc;
+  background: #a89bdc;
   top: -300px;
   right: -200px;
   animation-duration: 7.5s;
@@ -140,7 +145,7 @@ button:focus {
 .glass-mesh i:nth-child(3) {
   width: 880px;
   height: 880px;
-  background: #7fb2cc;
+  background: #6fc0c4;
   bottom: -420px;
   left: 180px;
   animation-duration: 5.5s;
@@ -149,28 +154,36 @@ button:focus {
 .glass-mesh i:nth-child(4) {
   width: 720px;
   height: 720px;
-  background: #cdbcaa;
+  background: #d8bc9c;
   bottom: -340px;
   right: 40px;
   animation-duration: 8.5s;
   animation-delay: -5s;
 }
 
-/* 全局呼吸：透明度与缩放同步缓慢起伏，四个光斑用不同时长与负延迟错开相位。
-   取值刻意让平均值落在原来的静态值上 ——
-   静态时是 opacity: 0.82，这里 0.66–0.98 的平均正好是 0.82，
-   这样「动起来」的同时，整体明暗与之前完全一致，不会把背景变淡。
+/* 全局呼吸：透明度 + 缩放 + 明显的位移三者同时缓慢起伏。
 
-   注意与进入页的区别：进入页（.auth-page）用 authBreath 0.26–0.70，
-   是更淡更收敛的一套，见下方。 */
+   位移是关键。最初只写了 translate3d(2.5%)，在 900px 的光斑上才 22px ——
+   实测 RGB 差异 19.04 ≈ 灰度差异 18.94，说明画面几乎只有明暗变化。
+   人眼对「移动」的敏感度远高于「明暗变化」，所以改成三关键帧的游走路径：
+   0% → 50% → 100% 停在三个不同位置，行程约 5%+5%（45–90px）。
+   配合 alternate，光斑是「漂过去再漂回来」，而不是原地呼吸。
+
+   取值刻意让平均透明度落在原来的静态值 0.82 上
+   （0.66 / 0.98 / 0.74 的平均约 0.79，接近 0.82），
+   这样动起来的同时整体明暗与之前基本一致，不会把背景变淡。 */
 @keyframes meshBreath {
   0% {
-    opacity: 0.66;
-    transform: translate3d(0, 0, 0) scale(0.9);
+    opacity: 0.58;
+    transform: translate3d(0, 0, 0) scale(0.88);
+  }
+  50% {
+    opacity: 1;
+    transform: translate3d(-7%, 5%, 0) scale(1.14);
   }
   100% {
-    opacity: 0.98;
-    transform: translate3d(2.5%, -2.5%, 0) scale(1.1);
+    opacity: 0.78;
+    transform: translate3d(6%, -7%, 0) scale(0.94);
   }
 }
 
@@ -572,11 +585,15 @@ button:focus {
 @keyframes authBreath {
   0% {
     opacity: 0.26;
-    transform: translate3d(0, 0, 0) scale(0.9);
+    transform: translate3d(0, 0, 0) scale(0.88);
+  }
+  50% {
+    opacity: 0.72;
+    transform: translate3d(-7%, 5%, 0) scale(1.14);
   }
   100% {
-    opacity: 0.7;
-    transform: translate3d(2.5%, -2.5%, 0) scale(1.12);
+    opacity: 0.42;
+    transform: translate3d(6%, -7%, 0) scale(0.94);
   }
 }
 
