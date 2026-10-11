@@ -124,22 +124,17 @@ async function postChat(config: AIConfig, body: Record<string, unknown>): Promis
 }
 
 // 通用 API 调用：自动附加"禁用思考"参数以节省成本；网关不支持时自动回退重试
-async function callAPI(config: AIConfig, userPrompt: string, maxTokens: number, temperature: number): Promise<string> {
-  const baseBody: Record<string, unknown> = {
-    model: config.model,
-    messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: userPrompt },
-    ],
-    temperature,
-    max_tokens: maxTokens,
-  }
-
-  // 尝试禁用思考（若网关支持，将显著提速并降低费用）
+//
+// 注意 noThinkSupported 是模块级缓存：第一次探测的结果会复用，
+// 所以连接自检探测出来的能力，真实生成也会直接受益（反之亦然）。
+async function postChatPreferNoThink(
+  config: AIConfig,
+  body: Record<string, unknown>
+): Promise<string> {
   if (noThinkSupported !== false) {
     try {
       const result = await postChat(config, {
-        ...baseBody,
+        ...body,
         thinking: { type: 'disabled' },
         enable_thinking: false,
       })
@@ -156,7 +151,21 @@ async function callAPI(config: AIConfig, userPrompt: string, maxTokens: number, 
     }
   }
 
-  return postChat(config, baseBody)
+  return postChat(config, body)
+}
+
+async function callAPI(config: AIConfig, userPrompt: string, maxTokens: number, temperature: number): Promise<string> {
+  const baseBody: Record<string, unknown> = {
+    model: config.model,
+    messages: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: userPrompt },
+    ],
+    temperature,
+    max_tokens: maxTokens,
+  }
+
+  return postChatPreferNoThink(config, baseBody)
 }
 
 async function callAI(config: AIConfig, input: DiaryFormInput, retryHint = ''): Promise<string> {
@@ -184,10 +193,15 @@ export async function testAIConnection(config: AIConfig): Promise<ConnectionTest
 
   const started = Date.now()
   try {
-    const reply = await postChat(config, {
+    // 走与真实生成同一条路径（postChatPreferNoThink）：
+    // 之前这里直接调 postChat，绕过了「禁用思考」的探测，
+    // 于是自检和实际生成的行为不一致 —— 自检会踩推理模型的坑，实际生成却不会。
+    const reply = await postChatPreferNoThink(config, {
       model: config.model,
       messages: [{ role: 'user', content: '回复 ok' }],
-      max_tokens: 16,
+      // 16 太小：推理模型会把预算全花在思考上，正文为空（finish_reason=length）。
+      // 给足余量，即使网关不支持禁用思考也能产出正文。
+      max_tokens: 512,
       temperature: 0,
     })
     const latencyMs = Date.now() - started
@@ -198,6 +212,20 @@ export async function testAIConnection(config: AIConfig): Promise<ConnectionTest
       message: `连接正常 · 用时 ${latencyMs}ms · 模型 ${config.model} · 返回「${preview}」`,
     }
   } catch (e: unknown) {
+    const latencyMs = Date.now() - started
+
+    // 自检的目的是「能不能通」，不是「能不能写出正文」。
+    // 推理模型在预算不足时会只产出 reasoning_content、content 为空，
+    // 这恰恰证明 Key / 地址 / 模型都是通的 —— 报成失败只会吓到使用者。
+    if (e instanceof Error && e.name === 'EmptyContentError') {
+      console.warn('[AI] 自检收到空正文（推理预算耗尽），但连接本身是通的')
+      return {
+        ok: true,
+        latencyMs,
+        message: `连接正常 · 用时 ${latencyMs}ms · 模型 ${config.model} · 只返回了思考内容，未产出正文（不影响使用）`,
+      }
+    }
+
     return { ok: false, message: e instanceof Error ? e.message : String(e) }
   }
 }

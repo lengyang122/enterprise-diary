@@ -202,4 +202,36 @@ describe('testAIConnection', () => {
     expect(r.ok).toBe(false)
     expect(r.message).toContain('网络连接失败')
   })
+
+  it('走与真实生成同一条路径：请求里带上禁用思考参数、且 max_tokens 足够', async () => {
+    // 曾经这里直接调 postChat，绕过了 callAPI 的禁用思考探测，
+    // 并且只给 16 个 token —— 推理模型会把预算全花在思考上、正文为空
+    fetchMock.mockResolvedValue(chatResponse('ok'))
+    await testAIConnection(cfg())
+
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body as string)
+    expect(body.thinking).toEqual({ type: 'disabled' })
+    expect(body.enable_thinking).toBe(false)
+    expect(body.max_tokens).toBeGreaterThanOrEqual(256)
+  })
+
+  it('只返回思考内容、正文为空时算连接正常 —— 自检的目的是「能不能通」', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        choices: [
+          {
+            finish_reason: 'length',
+            message: { role: 'assistant', content: '', reasoning_content: '思考中……' },
+          },
+        ],
+      }),
+    } as unknown as Response)
+
+    const r = await testAIConnection(cfg({ model: 'deepseek-v4-flash' }))
+    expect(r.ok).toBe(true)
+    expect(r.message).toContain('连接正常')
+    expect(r.message).toContain('未产出正文')
+  })
 })
